@@ -1,0 +1,266 @@
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+
+hr {
+  display: block;
+  margin-top: 0.5em;
+  margin-bottom: 0;
+  margin-left: auto;
+  margin-right: auto;
+  border-style: inset;
+  border-width: 1px;
+}
+
+@font-face {
+  font-family: myFont;
+  src: url("font/cmunrm.ttf");
+}
+@font-face {
+  font-family: myFont;
+  src: url("font/cmunti.ttf");
+  font-style: italic;
+}
+@font-face {
+  font-family: myFont;
+  src: url("font/cmunbx.ttf");
+  font-weight: bold;
+}
+@font-face {
+  font-family: myFont;
+  src: url("font/cmunbi.ttf");
+  font-weight: bold;
+  font-style: italic;
+}
+@font-face {
+  font-family: fraktur;
+  src: url("font/fraktur.ttf");
+}
+
+body {
+  font-family: myFont;
+  margin: 0;
+}
+
+a.anchor {
+  display: block;
+  position: relative;
+  top: -200px;
+  visibility: hidden;
+}
+
+a:link {
+  text-decoration: none;
+  color: blue;
+}
+
+a:hover {
+  text-decoration: underline;
+  color: blue;
+}
+
+a:visited {
+  text-decoration: none;
+  color: darkblue;
+} 
+
+.header {
+  width: 100%;
+  height: 200px;
+  background-color: white;
+  background-image: url("banner.png");
+  background-repeat: no-repeat;
+  background-position: center; 
+}
+
+.content {
+  margin: 1em;
+}
+
+.footer {
+  margin: 1em;
+  font-size: small;
+}
+
+.sticky {
+  position: fixed;
+  top: 0;
+  width: 100%;
+}
+
+.sticky + .content {
+  padding-top: 200px;
+}
+
+img{
+  max-width:700px;
+}
+
+bbox {
+  display: block;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  margin-left: 0;
+  margin-right: 1em;
+  width: 100%;
+  float: left;
+  text-align: left;
+}
+
+pbox {
+  display: block;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  margin-left: 1em;
+  margin-right: 0em;
+  width: 400px;
+  float: right;
+  text-align: center;
+  padding: 1em;
+}
+
+importantbox {
+  display: block;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  margin-left: 1em;
+  margin-right: 0em;
+  width: 400px;
+  float: right;
+  text-align: center;
+  padding: 1em;
+  border-color: blue;
+  border-style: solid;
+  border-width: 0px 0px 0px 5px;
+}
+
+noblebox {
+  display: block;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  margin-left: 1em;
+  margin-right: 0em;
+  width: 400px;
+  float: right;
+  text-align: center;
+  padding: 1em;
+  border-color: blue;
+  border-style: solid;
+  border-width: 0px 0px 0px 20px;
+}
+
+redbox {
+  display: block;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  margin-left: 1em;
+  margin-right: 0em;
+  width: 400px;
+  float: right;
+  text-align: center;
+  padding: 1em;
+  border-color: red;
+  border-style: solid;
+  border-width: 0px 0px 0px 20px;
+}
+
+manorbox {
+  display: block;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  margin-left: 1em;
+  margin-right: 0em;
+  width: 400px;
+  float: right;
+  text-align: center;
+  padding: 1em;
+  border-color: black;
+  border-style: solid;
+  border-width: 0px 0px 0px 5px;
+}
+
+countybox {
+  display: block;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  margin-left: 1em;
+  margin-right: 0em;
+  width: 400px;
+  float: right;
+  text-align: center;
+  padding: 1em;
+  border-color: black;
+  border-style: solid;
+  border-width: 0px 0px 0px 20px;
+}
+
+successionbox {
+  display: block;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  margin-left: auto;
+  margin-right: auto;
+  width: 400px;
+  float: center;
+  text-align: center;
+}
+
+armsbox {
+  display: block;
+  text-align: left;
+  padding-left: 1em;
+}
+
+table {
+  border-collapse: collapse;
+  width: 400px;
+}
+
+table.conq {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+tr:nth-child(even) {
+  background-color: #dddddd;
+}
+
+tr.cont {
+  background-color: #ffffff;
+}
+
+td, th {
+  border: 1px solid #dddddd;
+  text-align: left;
+  padding: 8px;
+}
+
+td.cont, th.cont {
+  border: 0px solid #ffffff;
+  text-align: left;
+  padding: 8px;
+}
+
+td.succ {
+  border: 1px solid #dddddd;
+  text-align: center;
+  padding: 8px;
+}
+
+gallery {
+  border-collapse: collapse;
+}
+
+figure {
+  display: block;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+figcaption {
+  display: block;
+  font-size: small;
+}
+</style>
+</meta>
