@@ -8,7 +8,6 @@ var port = 8443;
 var verbose = true;
 var password = "mellon";
 var types, banned;
-var cyprianMonthLength = 28;
 
 // Library modules.
 var fs = require("fs");
@@ -254,37 +253,6 @@ function banUpperCase(root, folder)
   }
 }
 
-// Turns the Cyprian day of the month into a Cyprian weekday.
-function getCyprianWeekday(dayNo)
-{
-  if(dayNo <= cyprianMonthLength)
-  {
-    if(dayNo%7 === 0) return("Seventh-day");
-    else if(dayNo%7 === 1) return("First-day");
-    else if(dayNo%7 === 2) return("Second-day");
-    else if(dayNo%7 === 3) return("Third-day");
-    else if(dayNo%7 === 4) return("Fourth-day");
-    else if(dayNo%7 === 5) return("Fifth-day");
-    else if(dayNo%7 === 6) return("Sixth-day");
-  }
-  else
-  {
-    if(dayNo === cyprianMonthLength+1) return("Eighth-day");
-    else return("Ninth-day");
-  }
-}
-
-// Ronseal.
-function getCyprianYear(hebYear, hebMonth)
-{
-  var year = hebYear-constants.yearDiff;
-  if(hebMonth >= constants.roshHashanahMonth)
-  {
-    year = year-1;
-  }
-  return(year);
-}
-
 /* 
 #########
 # START #
@@ -312,14 +280,17 @@ function handle(request, response)
   var url = request.url.toLowerCase(), file = "", type = "";
 
   if(url.endsWith("/")) url = url+"index.html";
+
   if(isSearch(url)) url = url+".html";
+
   if(isBanned(url))
   {
-    return(final.fail(response, constants.NotFound,
-                      "URL has been banned"));
+    return(final.fail(response, constants.NotFound, "URL has been banned"));
   }
+
   type = findType(url);
   file = "./public"+url;
+
   if(type == null)
   {
     return(final.fail(response, constants.BadType,
@@ -342,10 +313,6 @@ function handle(request, response)
     else file = "."+url;
     fs.readFile(file, readyDB);
   }
-  else if(url === "/calendarsroyal.html")
-  {
-    fs.readFile(file, readyCalendar);
-  }
   else if(url.indexOf(".html") >= 0) fs.readFile(file, readyHTML);
   else fs.readFile(file, ready);
 
@@ -356,10 +323,6 @@ function handle(request, response)
   function readyHTML(err, content)
   {
     deliverHTML(response, type, err, content);
-  }
-  function readyCalendar(err, content)
-  {
-    deliverCalendar(response, type, err, content);
   }
   function readyDB(err, content)
   {
@@ -382,28 +345,6 @@ function deliver(response, type, err, content)
 function deliverHTML(response, type, err, content)
 {
   var contents = arrayBufferToString(content);
-  final.wrapup(response, type, err, contents);
-}
-
-// Delivers the calendar.
-function deliverCalendar(response, type, err, content)
-{
-  var contents = arrayBufferToString(content);
-  var cyprianMonths = ["Pri", "Sec", "Ter", "Qua", "Qui",
-                       "Sex", "Sep", "Oct", "Nov", "Dec",
-                       "Uno", "Duo", "Int"];
-  var hebcal = require("hebcal");
-  var hebdate = new hebcal.HDate();
-  var cyprianDate = hebdate.day+" "+cyprianMonths[(hebdate.month-1)]+
-                    " <span style=\"font-family:fraktur;\">T</span>"+
-                    "<sub>"+
-                    getCyprianYear(hebdate.year,hebdate.month)+
-                    "</sub>";
-  var cyprianWeekday = getCyprianWeekday(hebdate.day);
-
-  contents = contents.replace("CYPRIANDATE", cyprianDate);
-  contents = contents.replace("CYPRIANWDAY", cyprianWeekday);
-
   final.wrapup(response, type, err, contents);
 }
 
