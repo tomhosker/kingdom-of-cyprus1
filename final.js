@@ -1,12 +1,13 @@
-// Constants.
+// Imports.
 var constants = require("./constants.js");
 var cdates = require("./cdates.js");
+var cutil = require("./cutil.js"), util = cutil.getClass();
 
 // This stuff connects this file to various others.
 module.exports = {
   wrapup: function(response, type, err, contents)
   {
-    finalTouches(response, type, err, contents);
+    footerMaker(response, type, err, contents);
   },
   fail: function(response, code, text)
   {
@@ -19,20 +20,6 @@ module.exports = {
 # HELPER FUNCTIONS #
 ####################
 */
-
-// "Absolute Replace" replaces a given substring.
-function absRep(big, old, rep)
-{
-  var count = 0;
-
-  while((big.indexOf(old) >= 0) && (count < constants.maxloops))
-  {
-    big = big.replace(old, rep);
-    count++;
-  }
-
-  return(big);
-}
 
 // Adds today's date in its various forms.
 function addDates(contents)
@@ -58,11 +45,11 @@ function addDates(contents)
     sacredColour = cdd.sacred.colour;
   }
 
-  contents = absRep(contents, "GREGDATE", gregDate);
-  contents = absRep(contents, "CYPRIANDATE", cyprianDate);
-  contents = absRep(contents, "CYPRIANWDAY", cyprianWeekday);
-  contents = absRep(contents, "SACREDDATE", sacredDate);
-  contents = absRep(contents, "SACREDCOLOUR", sacredColour);
+  contents = util.absRep(contents, "GREGDATE", gregDate);
+  contents = util.absRep(contents, "CYPRIANDATE", cyprianDate);
+  contents = util.absRep(contents, "CYPRIANWDAY", cyprianWeekday);
+  contents = util.absRep(contents, "SACREDDATE", sacredDate);
+  contents = util.absRep(contents, "SACREDCOLOUR", sacredColour);
 
   return(contents);
 }
@@ -73,7 +60,7 @@ function redify(contents)
   var kingString = "<a href=\"persona1b.html\">";
   var kingStringRed = "<a class=\"red\" href=\"persona1b.html\">";
 
-  contents = absRep(contents, kingString, kingStringRed);
+  contents = util.absRep(contents, kingString, kingStringRed);
 
   return(contents);
 }
@@ -84,13 +71,31 @@ function redify(contents)
 ###########
 */
 
+// Ronseal.
+function footerMaker(response, type, err, contents)
+{
+  var footer = "<div class=\"footer\">\n"+
+               "<p> Property of His Majesty's Government &#8226; "+
+               "<a href=\"index.html\">Home</a> &#8226; "+
+               "<a href=\"kingdom.html\">About the Kingdom</a> &#8226; "+
+               "<a href=\"support.html\">Support</a> &#8226; "+
+               "<a href=\"go_for.html\">Search</a> &#8226; "+
+               "<a href=\"more.html\">More</a> &#8226; "+
+               "Accessed: GREGDATE </p>\n"+
+               "</div>";
+
+  contents = contents.replace("THEFOOTER", footer);
+
+  finalTouches(response, type, err, contents);
+}
+
 // Some final prettification.
 function finalTouches(response, type, err, contents)
 {
   // Prettify quotation marks.
-  contents = absRep(contents, "`", constants.lquote);
-  contents = absRep(contents, "'", constants.rquote);
-  contents = absRep(contents, "---", constants.emdash);
+  contents = util.absRep(contents, "`", constants.lquote);
+  contents = util.absRep(contents, "'", constants.rquote);
+  contents = util.absRep(contents, "---", constants.emdash);
   // Add today's date in its various forms.
   contents = addDates(contents);
   // Sovereigns' names are written in special ink.

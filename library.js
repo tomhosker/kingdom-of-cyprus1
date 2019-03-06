@@ -4,6 +4,7 @@ This code is responsible for building the "LIBRARY" page.
 
 // Imports.
 var constants = require("./constants.js");
+var cutil = require("./cutil.js");
 var final = require("./final.js");
 var sql = require("sqlite3");
 var db = new sql.Database("canons.db");
