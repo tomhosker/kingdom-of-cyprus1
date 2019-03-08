@@ -1,16 +1,29 @@
 /*
-This code is responsible for building the various "Stud" pages.
+This code is responsible for building the various "Person" pages.
 */
 
 // Imports.
 var constants = require("./constants.js");
 var final = require("./final.js");
-var sql = require("sqlite3");
-var db = new sql.Database("cyprus.db");
+var sql = require("sqlite3"), db = new sql.Database("cyprus.db");
+var cutil = require("./cutil.js"), util = cutil.getClass();
 
 // Local constants.
 var male = 1;
 var female = 0;
+var maleRanks = ["None (dead)", "Villein", "Ploughman", "Journeyman",
+                 "Foreman", "Master Craftsman", "Bailiff",
+                 "Grand Master Craftsman", "Goodman", "Husbandman",
+                 "Yeoman", "Vice-Master", "Master", "Knight", "Baron",
+                 "Viscount", "Earl", "Marquess", "Duke", "Prince", "King"];
+var femaleRanks = ["None (dead)", "Villeiness", "Ploughman's Wife",
+                   "Journeyman's Wife", "Foreman's Wife",
+                   "Master Craftsman's Wife", "Bailiff's Wife",
+                   "Grand Master Craftsman's Wife", "Goodman's Wife",
+                   "Housekeeper", "Yeoman's Wife", "Vice-Mistress",
+                   "Mistress", "Knight's Wife", "Baroness", "Viscountess",
+                   "Countess", "Marchioness", "Duchess", "Princess",
+                   "Queen"];
 
 // This stuff connects this file to server.js.
 module.exports = {
@@ -25,96 +38,6 @@ module.exports = {
 # HELPER FUNCTIONS #
 ####################
 */
-
-// "Absolute Replace" replaces a given substring.
-function absRep(bigstring, lilstring, rep)
-{
-  var count = 0;
-  while((bigstring.indexOf(lilstring) >= 0) &&
-        (count < constants.maxloops))
-  {
-    bigstring = bigstring.replace(lilstring, rep);
-    count++;
-  }
-  return(bigstring);
-}
-
-// "Conditional Replace" replaces a sub-string with (0) or (1).
-function conRep(bigstring, lilstring, rep0, rep1)
-{
-  var count = 0;
-  if(rep0 != null)
-  {
-    while((bigstring.indexOf(lilstring) >= 0) &&
-          (count < constants.maxloops))
-    {
-      bigstring = bigstring.replace(lilstring, rep0);
-      count++;
-    }
-  }
-  else
-  {
-    while((bigstring.indexOf(lilstring) >= 0) &&
-          (count < constants.maxloops))
-    {
-      bigstring = bigstring.replace(lilstring, rep1);
-      count++;
-    }
-  }
-  return(bigstring);
-}
-
-// Ronseal.
-function rankConverter(rankTier, gender)
-{
-  if(gender === male)
-  {
-    if(rankTier === 1) return("Villein");
-    else if(rankTier === 2) return("Ploughman");
-    else if(rankTier === 3) return("Journeyman");
-    else if(rankTier === 4) return("Foreman");
-    else if(rankTier === 5) return("Master Craftsman");
-    else if(rankTier === 6) return("Bailiff");
-    else if(rankTier === 7) return("Grand Master Craftsman");
-    else if(rankTier === 8) return("Goodman");
-    else if(rankTier === 9) return("Husbandman");
-    else if(rankTier === 10) return("Yeoman");
-    else if(rankTier === 11) return("Vice-Master");
-    else if(rankTier === 12) return("Master");
-    else if(rankTier === 13) return("Knight");
-    else if(rankTier === 14) return("Baron");
-    else if(rankTier === 15) return("Viscount");
-    else if(rankTier === 16) return("Earl");
-    else if(rankTier === 17) return("Marquess");
-    else if(rankTier === 18) return("Duke");
-    else if(rankTier === 19) return("Prince");
-    else if(rankTier === 20) return("King");
-    else if(rankTier === 0) return("None (dead)");
-    else return("<em>Invalid rank</em>");
-  }
-  else
-  {
-    if(rankTier === 1) return("Villeiness");
-    else if(rankTier === 2) return("Ploughman's Wife");
-    else if(rankTier === 4) return("Foreman's Wife");
-    else if(rankTier === 6) return("Bailiff's Wife");
-    else if(rankTier === 8) return("Goodman's Wife");
-    else if(rankTier === 9) return("Housekeeper");
-    else if(rankTier === 10) return("Yeoman's Wife");
-    else if(rankTier === 11) return("Vice-Mistress");
-    else if(rankTier === 12) return("Mistress");
-    else if(rankTier === 13) return("Knight's Wife");
-    else if(rankTier === 14) return("Baroness");
-    else if(rankTier === 15) return("Viscountess");
-    else if(rankTier === 16) return("Countess");
-    else if(rankTier === 17) return("Marchioness");
-    else if(rankTier === 18) return("Duchess");
-    else if(rankTier === 19) return("Princess");
-    else if(rankTier === 20) return("Queen");
-    else if(rankTier === 0) return("None (dead)");
-    else return("<em>Invalid rank</em>");
-  }
-}
 
 // Ronseal.
 function extractAccoladeName(id, accolade)
@@ -138,26 +61,26 @@ function fetch(request, response, type, err, contents)
 {
   "use strict";
   var url = request.url.toLowerCase();
-
   var a = url.indexOf("a")+1;
   var b = url.indexOf("b");
   var id = 0;
+  var query = "SELECT * FROM Person WHERE id = ?;";
+
   if((a > 0) && (b > 0))
   {
     id = url.substr(a, b-a);
     id = parseInt(id);
   }
-  else return(fail(response, NotFound, "No such page."));
+  else return(fail(response, constants.NotFound, "No ID."));
 
-  var query = "SELECT * FROM Person WHERE id = "+id+";";
-  db.all(query, ready);
+  db.all(query, [id], ready);
 
   function ready(err, data)
   {
     if(err) throw err;
     if(data.length < 1)
     {
-      return(final.fail(response, NotFound, "No such page."));
+      return(final.fail(response, constants.NotFound, "No such page."));
     }
     begin(response, type, err, contents, data, id);
   }
@@ -166,6 +89,7 @@ function fetch(request, response, type, err, contents)
 // Ronseal.
 function begin(response, type, err, contents, data, id)
 {
+  id = data[0].id;
   makeSimples(response, type, err, contents, data, id);
 }
 
@@ -173,47 +97,53 @@ function begin(response, type, err, contents, data, id)
 function makeSimples(response, type, err, contents, data, id)
 {
   var shortTitle = data[0].shortTitle;
-  var shortishTitle = "";
-  var style = "";
-  var otherNames = "";
+  var shortishTitle = "", style = "", otherNames = "";
   var surname = data[0].surname;
   var forename = data[0].forename;
-  var rank = rankConverter(data[0].rankTier, data[0].gender);
-  var addressedAs = "";
-  var profilePicture = "";
-  var bio = "";
+  var rank = 0
+  var addressedAs = "", profilePicture = "", bio = "";
   var cyprianLegalName = data[0].cyprianLegalName;
-  var otherTitles = "";
-  var arms = "";
-  var otherData = "";
+  var otherTitles = "", arms = "", otherData = "";
 
   if(data[0].shortishTitle === null) shortishTitle = shortTitle;
   else shortishTitle = data[0].shortishTitle;
+
   if(data[0].style === null) style = "";
   else style = data[0].style;
+
   if(data[0].otherNames === null) otherNames = "<em>None</em>";
   else otherNames = data[0].otherNames;
+
+  if(data[0].gender === male) rank = maleRanks[data[0].rankTier];
+  else rank = femaleRanks[data[0].rankTier];
+
   if(data[0].addressedAs === null)
   {
     if(data[0].gender === male) addressedAs = "Sir";
     else addressedAs = "Madam";
   }
   else addressedAs = data[0].addressedAs;
+
   if(data[0].profilePicture === null) profilePicture = "";
   else
   {
     profilePicture =
       "<img src=\"images/"+data[0].profilePicture+"\" "+
-           "alt=\"Profile Photo\" align=\"center\" "+
-           "width=\"350px\" style=\"margin: 1em\"/>";
+           "alt=\"Profile Photo\" "+
+           "align=\"center\" "+
+           "width=\""+constants.standardProfilePhotoWidth+"\" "+
+           "style=\"margin: 1em\"/>";
   }
+
   if(data[0].bio === null)
   {
     bio = shortTitle+" is a "+rank+".";
   }
   else bio = data[0].bio;
+
   if(data[0].otherTitles === null) otherTitles = "<em>None.</em>";
   else otherTitles = data[0].otherTitles;
+
   if(data[0].arms === null) arms = "";
   else
   {
@@ -226,25 +156,23 @@ function makeSimples(response, type, err, contents, data, id)
   if(data[0].otherData === null) otherData = "<em>None.</em>";
   else otherData = data[0].otherData;
 
-  contents = absRep(contents, "SHORTTITLE", shortTitle);
-  contents = absRep(contents, "SHORTISHTITLE", shortishTitle);
-  contents = absRep(contents, "STYLE", style);
-  contents = absRep(contents, "OTHERNAMES", otherNames);
-  contents = absRep(contents, "SURNAME", surname);
-  contents = absRep(contents, "FORENAME", forename);
-  contents = absRep(contents, "RANK", rank);
-  contents = absRep(contents, "ADDRESSEDAS", addressedAs);
-  contents = absRep(contents, "PROFILEPICTURE", profilePicture);
-  contents = absRep(contents, "BIOGRAPHY", bio);
-  contents = absRep(contents, "CYPRIANLEGALNAME",
-                              cyprianLegalName);
-  contents = absRep(contents, "OTHERTITLES", otherTitles);
-  contents = absRep(contents, "ARMS", arms);
-  contents = absRep(contents, "OTHERDATA", otherData);
+  contents = util.absRep(contents, "SHORTTITLE", shortTitle);
+  contents = util.absRep(contents, "SHORTISHTITLE", shortishTitle);
+  contents = util.absRep(contents, "STYLE", style);
+  contents = util.absRep(contents, "OTHERNAMES", otherNames);
+  contents = util.absRep(contents, "SURNAME", surname);
+  contents = util.absRep(contents, "FORENAME", forename);
+  contents = util.absRep(contents, "RANK", rank);
+  contents = util.absRep(contents, "ADDRESSEDAS", addressedAs);
+  contents = util.absRep(contents, "PROFILEPICTURE", profilePicture);
+  contents = util.absRep(contents, "BIOGRAPHY", bio);
+  contents = util.absRep(contents, "CYPRIANLEGALNAME", cyprianLegalName);
+  contents = util.absRep(contents, "OTHERTITLES", otherTitles);
+  contents = util.absRep(contents, "ARMS", arms);
+  contents = util.absRep(contents, "OTHERDATA", otherData);
 
   fetchHolds(response, type, err, contents, id);
 }
-
 
 /*
 ##########################
@@ -256,54 +184,102 @@ function makeSimples(response, type, err, contents, data, id)
 // Fetches the "Holds" table.
 function fetchHolds(response, type, err, contents, id)
 {
-  var query = "SELECT * FROM Holds WHERE person = "+id+";";
-  db.all(query, ready);
+  var query = "SELECT Accolade.name, "+
+                     "Chivalric.name AS chivalric, "+
+                     "Chivalric.id AS chivkey "+
+              "FROM Holds "+
+              "JOIN Accolade ON Accolade.id = Holds.accolade "+
+              "JOIN Chivalric ON Accolade.chivalric = Chivalric.id "+
+              "WHERE Holds.person = ? "+
+              "ORDER BY Accolade.tier;";
+
+  db.all(query, [id], ready);
 
   function ready(err, holds)
   {
     if(err) throw err;
-    fetchAccolade(response, type, err, contents, id, holds);
-  }
-}
-
-// Fetches the "Accolade" table.
-function fetchAccolade(response, type, err, contents, id, holds)
-{
-  var query = "SELECT * FROM Accolade;";
-  db.all(query, ready);
-
-  function ready(err, accolade)
-  {
-    if(err) throw err;
-    makeAccolades(response, type, err, contents, id,
-                  holds, accolade);
+    makeAccolades(response, type, err, contents, id, holds);
   }
 }
 
 // Makes the person's list of accolades.
-function makeAccolades(response, type, err, contents, id,
-                       holds, accolade)
+function makeAccolades(response, type, err, contents, id, holds)
 {
-  var acc = "";
+  var acc = new Accolades(holds);
+  var accoladesString = acc.htmlPrintout;
 
-  if(holds.length === 0) acc = "";
-  else
-  {
-    for(var i = 0; i < holds.length; i++)
-    {
-      acc = acc+extractAccoladeName(holds[i].accolade, accolade)+
-            ", ";
-    }
-  }
-
-  if(acc === "") ;
-  else
-  {
-    acc = acc.substr(0, acc.length-2);
-    acc = "<h4> Accolades </h4> <p> "+acc+" </p>";
-  }
-
-  contents = absRep(contents, "ACCOLADES", acc);
+  accoladesString = "<h4> Accolades </h4>\n"+"<p> "+accoladesString+" </p>";
+  contents = util.absRep(contents, "ACCOLADES", accoladesString);
 
   final.wrapup(response, type, err, contents);
+}
+
+// This class holds a person's accolades.
+class Accolades
+{
+  constructor(holds)
+  {
+    this.holds = holds;
+    this.accolades = this.buildAccolades();
+    this.orders = this.buildOrders();
+    this.chivkeys = this.buildChivkeys();
+    this.htmlPrintout = this.buildHTMLPrintout();
+  }
+
+  buildAccolades()
+  {
+    var accolades = [];
+
+    for(var i = 0; i < this.holds.length; i++)
+    {
+      accolades.push(this.holds[i].name);
+    }
+
+    return(accolades);
+  }
+
+  buildOrders()
+  {
+    var chivalrics = util.getCSet();
+
+    for(var i = 0; i < this.holds.length; i++)
+    {
+      chivalrics.add(this.holds[i].chivalric);
+    }
+
+    return(chivalrics);
+  }
+
+  buildChivkeys()
+  {
+    var keys = util.getCSet();
+
+    for(var i = 0; i < this.holds.length; i++)
+    {
+      keys.add(this.holds[i].chivkey);
+    }
+
+    return(keys);
+  }
+
+  buildHTMLPrintout()
+  {
+    var result = "", plainString = "", linkString = "";
+
+    for(var i = 0; i < this.accolades.length-1; i++)
+    {
+      result = result+this.accolades[i]+", ";
+    }
+    result = result+this.accolades[this.accolades.length-1];
+
+    for(var i = 0; i < this.orders.getLength(); i++)
+    {
+      plainString = this.orders.get(i);
+      linkString = "<a href=\"chivalrica"+this.chivkeys.get(i)+"b.html\">"+
+                   plainString+"</a>";
+      result = result.replace(plainString, linkString);
+    }
+
+    return(result);
+  }
 }

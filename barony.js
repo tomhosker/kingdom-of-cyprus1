@@ -4,6 +4,7 @@ This code is responsible for building the various "Barony" pages.
 
 // Imports.
 var constants = require("./constants.js");
+var cutil = require("./cutil.js"), util = cutil.getClass();
 var final = require("./final.js");
 var sql = require("sqlite3");
 var db = new sql.Database("cyprus.db");
@@ -22,97 +23,45 @@ module.exports = {
 ####################
 */
 
-// "Absolute Replace" replaces a given substring.
-function absRep(bigstring, lilstring, rep)
+// Returns a linked version of a person's short title.
+function makeLinkedST(id, shortTitle, rankTier, style)
 {
-  var count = 0;
-  while((bigstring.indexOf(lilstring) >= 0) &&
-        (count < constants.maxloops))
-  {
-    bigstring = bigstring.replace(lilstring, rep);
-    count++;
-  }
-  return(bigstring);
-}
+  var result = "<a href=\"persona"+id+"b.html\">"+shortTitle+"</a>";
 
-// "Conditional Replace" replaces a sub-string with (0) or (1).
-function conRep(bigstring, lilstring, rep0, rep1)
-{
-  var count = 0;
-  if(rep0 != null)
+  if((rankTier >= constants.marquessRank) && (style !== null))
   {
-    while((bigstring.indexOf(lilstring) >= 0) &&
-          (count < constants.maxloops))
-    {
-      bigstring = bigstring.replace(lilstring, rep0);
-      count++;
-    }
+    result = style+" "+result;
   }
-  else
-  {
-    while((bigstring.indexOf(lilstring) >= 0) &&
-          (count < constants.maxloops))
-    {
-      bigstring = bigstring.replace(lilstring, rep1);
-      count++;
-    }
-  }
-  return(bigstring);
+  return(result);
 }
 
 // Ronseal.
-function getPersonName(id, person)
+function buildManors(manors)
 {
-  var name = "";
-  for(var i = 0; i < person.length; i++)
-  {
-    if(person[i].id === id)
-    {
-      name = "<a href=\"persona"+id+"b.html\">"+
-             person[i].shortTitle+"</a>";
-      return(name);
-    }
-  }
-  return("<em>Invalid ID</em>");
-}
+  var result = "";
+  var table = util.getTable();
+  var row = [];
+  var manor = "", master = "";
 
-// Ronseal.
-function makeManors(manor, person)
-{
-  var manors = "<table> <tr> <th>Manor</th> "+
-               "<th>Master</th> </tr>";
-  for(var i = 0; i < manor.length; i++)
+  table.setColumns(["Manor", "Master"]);
+  for(var i = 0; i < manors.length; i++)
   {
-    manors = manors+"<tr> <td><a href=\"manora"+manor[i].id+
-             "b.html\">"+manor[i].name+"</a></td>"+
-             "<td>"+getPersonName(manor[i].master, person)+
-             "</td> </tr> ";
+    manor = "<a href=\"manora"+manors[i].manorID+"b.html\">"+
+            manors[i].manorName+"</a>";
+    master = makeLinkedST(manors[i].masterID, manors[i].masterShortTitle,
+                          manors[i].masterRankTier, manors[i].masterStyle);
+    row = [manor, master];
+    table.addRow(row);
   }
-  manors = manors+"</table>";
-  return(manors);
-}
+  result = table.buildHTMLPrintout();
 
-// Ronseal.
-function getCountyName(id, county)
-{
-  var name = "";
-  for(var i = 0; i < county.length; i++)
-  {
-    if(county[i].id === id)
-    {
-      name = "<a href=\"countya"+id+"b.html\">"+
-             county[i].name+"</a>";
-      return(name);
-    }
-  }
-  return("<em>Invalid ID</em>");
+  return(result);
 }
 
 /*
-######################
-#     FIRST PASS     #
-# Data from "Barony" #
-######################
+##############
+# FETCH DATA #
+##############
 */
 
 // Fetches the required data from the database.
@@ -120,28 +69,25 @@ function fetch(request, response, type, err, contents)
 {
   "use strict";
   var url = request.url.toLowerCase();
-  url = url.substr(url.indexOf("a")+1, url.length);
-
-  var a = url.indexOf("a")+1;
-  var b = url.indexOf("b");
+  var a = url.indexOf("baronya")+"baronya".length;
+  var b = url.indexOf("b.html");
   var id = 0;
-  if((a > 0) && (b > 0))
-  {
-    id = url.substr(a, b-a);
-    id = parseInt(id);
-  }
-  else return(final.fail(response, NotFound, "No such page."));
+  var query = "SELECT * FROM Barony WHERE id = ?;";
+  var data = util.getDataDictionary();
 
-  var query = "SELECT * FROM Barony WHERE id = "+id+";";
-  db.all(query, ready);
+  if((a > 0) && (b > a)) id = parseInt(url.substr(a, b-a));
+  else return(final.fail(response, constants.NotFound, "No ID."));
 
-  function ready(err, data)
+  db.all(query, [id], ready);
+
+  function ready(err, extract)
   {
     if(err) throw err;
-    if(data.length < 1)
+    if(extract.length < 1)
     {
-      return(fail(response, NotFound, "No such page."));
+      return(fail(response, constants.NotFound, "No such page."));
     }
+    data.add("barony", extract);
     begin(response, type, err, contents, id, data);
   }
 }
@@ -149,87 +95,108 @@ function fetch(request, response, type, err, contents)
 // Ronseal.
 function begin(response, type, err, contents, id, data)
 {
+  id = data.access("barony")[0].id;
+
   fetchPerson(response, type, err, contents, id, data);
 }
 
 // Fetches the "Person" table from the database.
 function fetchPerson(response, type, err, contents, id, data)
 {
-  var query = "SELECT * FROM Person;";
-  db.all(query, ready);
+  var query = "SELECT * FROM Person WHERE id = ?;";
+  var baronID = data.access("barony")[0].id;
 
-  function ready(err, person)
+  db.all(query, [baronID], ready);
+
+  function ready(err, extract)
   {
     if(err) throw err;
-    fetchManor(response, type, err, contents, id,
-               data, person);
+    data.add("baron", extract);
+    fetchManor(response, type, err, contents, id, data);
   }
 }
 
 // Fetches the "Manor" table from the database.
-function fetchManor(response, type, err, contents, id,
-                    data, person)
+function fetchManor(response, type, err, contents, id, data)
 {
-  var query = "SELECT * FROM Manor WHERE barony = "+id+" "+
-              "ORDER BY seniority;";
-  db.all(query, ready);
+  var query = "SELECT Manor.id AS manorID, "+
+                     "Manor.name AS manorName, "+
+                     "Person.id AS masterID, "+
+                     "Person.shortTitle AS masterShortTitle, "+
+                     "Person.rankTier AS masterRankTier, "+
+                     "Person.style AS masterStyle "+
+              "FROM Manor "+
+              "JOIN Person ON Person.id = Manor.master "+
+              "WHERE Manor.barony = ? "+
+              "ORDER BY Manor.seniority;";
 
-  function ready(err, manor)
+  db.all(query, [id], ready);
+
+  function ready(err, extract)
   {
     if(err) throw err;
-    fetchCounty(response, type, err, contents, id,
-                data, person, manor);
+    data.add("manors", extract);
+    fetchCounty(response, type, err, contents, id, data);
   }
 }
 
-// Fetches the "Duchy" table from the database.
-function fetchCounty(response, type, err, contents, id,
-                     data, person, manor)
+// Fetches the "County" table from the database.
+function fetchCounty(response, type, err, contents, id, data)
 {
-  var query = "SELECT * FROM County;";
-  db.all(query, ready);
+  var query = "SELECT * FROM County WHERE id = ?;";
+  var countyID = data.access("barony")[0].county;
 
-  function ready(err, county)
+  db.all(query, [countyID], ready);
+
+  function ready(err, extract)
   {
     if(err) throw err;
-    makeReplacements(response, type, err, contents, id,
-                     data, person, manor, county);
+    data.add("county", extract);
+    makeReplacements(response, type, err, contents, id, data);
   }
 }
 
 // Makes the simple replacements.
-function makeReplacements(response, type, err, contents, id,
-                          data, person, manor, county)
+function makeReplacements(response, type, err, contents, id, data)
 {
-  var name = "", arms = "", baron = "", theCounty = "",
-      description = "", manors = "";
+  var barony = data.access("barony")[0];
+  var baron = data.access("baron")[0];
+  var manors = data.access("manors");
+  var county = data.access("county")[0];
+  var name = "", arms = "", baronName = "", countyName = "",
+      description = "", manorsString = "";
 
-  name = data[0].name;
-  if(data[0].arms === null) arms = "";
+  name = barony.name;
+  baronName = makeLinkedST(baron.id, baron.shortTitle, baron.rankTier,
+                           baron.style);
+  theCounty = "<a href=\"countya"+county.id+"b.html\">"+county.name+"</a>";
+
+  if(barony.arms === null) arms = "";
   else
   {
-     arms = "<br/><img src=\"images/"+data[0].arms+"\" "+
-            "alt=\"Arms\" align=\"center\" "+
-            "width=\"200px\" style=\"margin: 1em\"/>";
+     arms = "<br/><img src=\"images/"+barony.arms+"\" "+
+                      "alt=\"Arms\" "+
+                      "align=\"center\" "+
+                      "width=\""+constants.vsmallProfilePhotoWidth+"\" "+
+                      "style=\"margin: 1em\"/>";
   }
-  if(data[0].baron === null) baron = "<em>Vacant</em>";
-  else baron = getPersonName(data[0].baron, person);
-  if(data[0].county === null) theCounty = "<em>None</em>";
-  else theCounty = getCountyName(data[0].county, county);
-  if(data[0].description === null)
-  {
-    description = "The <strong>"+name+"</strong> is a barony.";
-  }
-  else description = data[0].description;
-  if(manor.length === 0) manors = "<p> <em>None.</em> </p>";
-  else manors = makeManors(manor, person);
 
-  contents = absRep(contents, "NAME", name);
-  contents = absRep(contents, "ARMS", arms);
-  contents = absRep(contents, "BARON", baron);
-  contents = absRep(contents, "COUNTY", theCounty);
-  contents = absRep(contents, "DESCRIPTION", description);
-  contents = absRep(contents, "MANORS", manors);
+  if(barony.description === null)
+  {
+    description = "The <strong>"+name+"</strong> is a barony of the "+
+                  "County of "+theCounty+".";
+  }
+  else description = barony.description;
+
+  if(manors.length === 0) manorsString = "<p> <em>None.</em> </p>";
+  else manorsString = buildManors(manors);
+
+  contents = util.absRep(contents, "NAME", name);
+  contents = util.absRep(contents, "ARMS", arms);
+  contents = util.absRep(contents, "BARON", baronName);
+  contents = util.absRep(contents, "COUNTY", theCounty);
+  contents = util.absRep(contents, "DESCRIPTION", description);
+  contents = util.absRep(contents, "MANORS", manorsString);
 
   final.wrapup(response, type, err, contents);
 }

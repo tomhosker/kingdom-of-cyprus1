@@ -16,7 +16,7 @@
    version="1.1"
    id="svg21036"
    inkscape:version="0.92.3 (2405546, 2018-03-11)"
-   sodipodi:docname="arms.svg">
+   sodipodi:docname="armshosker.svg">
   <defs
      id="defs21030">
     <clipPath
@@ -36,16 +36,16 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.722998"
-     inkscape:cx="118.81591"
-     inkscape:cy="384.69014"
+     inkscape:zoom="1.2183436"
+     inkscape:cx="290.34736"
+     inkscape:cy="253.36429"
      inkscape:document-units="mm"
-     inkscape:current-layer="g40986"
+     inkscape:current-layer="layer1"
      showgrid="false"
      inkscape:snap-global="false"
-     inkscape:window-width="1366"
-     inkscape:window-height="713"
-     inkscape:window-x="0"
+     inkscape:window-width="1853"
+     inkscape:window-height="1025"
+     inkscape:window-x="67"
      inkscape:window-y="27"
      inkscape:window-maximized="1" />
   <metadata
@@ -73,7 +73,7 @@
     <g
        style="display:inline"
        id="g11401-2-3-9-4"
-       transform="matrix(-0.12626578,0,0,0.12626578,189.99382,-1.1090034)">
+       transform="matrix(-0.10744975,0,0,0.10744975,169.95268,13.029482)">
       <g
          style="display:inline"
          id="g11353-3-4-8-2"
@@ -146,7 +146,7 @@
     <g
        style="display:inline"
        id="g11758-8-6"
-       transform="matrix(-0.12626578,0,0,0.12626578,188.73117,0.65871156)">
+       transform="matrix(-0.10744975,0,0,0.10744975,168.87819,14.533775)">
       <g
          style="display:inline;stroke-width:1.64693642;stroke-miterlimit:4;stroke-dasharray:none"
          id="g11353-9-0-0-4"
@@ -18123,7 +18123,7 @@
     <g
        style="display:inline"
        id="g1237"
-       transform="matrix(-0.12626578,0,0,0.12626578,191.26511,-0.78216144)">
+       transform="matrix(-0.10744975,0,0,0.10744975,171.03451,13.307618)">
       <g
          transform="translate(161.84893,640.97704)"
          id="g6659-1-2"
@@ -20658,7 +20658,7 @@
       </g>
     </g>
     <g
-       transform="matrix(0.13229167,0,0,0.13229167,-32.070851,81.341948)"
+       transform="matrix(0.11257767,0,0,0.11257767,-19.020073,83.193651)"
        style="display:inline"
        id="g41578">
       <g

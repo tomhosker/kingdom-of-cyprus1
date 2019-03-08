@@ -15,10 +15,8 @@ var villeinRank = 1, ploughmanRank = 2, journeymanRank = 3,
     baronRank = 14, viscountRank = 15, earlRank = 16,
     marquessRank = 17, dukeInPaphosRank = 18, vicedukeRank = 18,
     dukeRank = 19;
-var standardProfilePhotoWidth = "350px",
-    smallerProfilePhotoWidth = "270px",
-    vsmallProfilePhotoWidth = "200px",
-    galleryHeight = "300px";
+var standardProfilePhotoWidth = "350px", smallerProfilePhotoWidth = "270px",
+    vsmallProfilePhotoWidth = "200px", galleryHeight = "300px";
 // NPU = ne plus ultra. NPI = ne plus intra.
 var canonNPU = 999, subCanonNPI = 10000;
 var gradesF = ["N", "C", "B", "A", "A*"], gradesS = ["DR", "G", "VG"];

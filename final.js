@@ -74,15 +74,16 @@ function redify(contents)
 // Ronseal.
 function footerMaker(response, type, err, contents)
 {
-  var footer = "<div class=\"footer\">\n"+
-               "<p> Property of His Majesty's Government &#8226; "+
-               "<a href=\"index.html\">Home</a> &#8226; "+
-               "<a href=\"kingdom.html\">About the Kingdom</a> &#8226; "+
-               "<a href=\"support.html\">Support</a> &#8226; "+
-               "<a href=\"go_for.html\">Search</a> &#8226; "+
-               "<a href=\"more.html\">More</a> &#8226; "+
-               "Accessed: GREGDATE </p>\n"+
-               "</div>";
+  var footer =
+    "<div class=\"footer\">\n"+
+      "<p> Property of His Majesty's Government &#8226; "+
+          "<a href=\"index.html\">Home</a> &#8226; "+
+          "<a href=\"kingdom.html\">About the Kingdom</a> &#8226; "+
+          "<a href=\"support.html\">Support</a> &#8226; "+
+          "<a href=\"go_for.html\">Search</a> &#8226; "+
+          "<a href=\"more.html\">More</a> &#8226; "+
+          "Accessed: GREGDATE </p>\n"+
+    "</div>";
 
   contents = contents.replace("THEFOOTER", footer);
 

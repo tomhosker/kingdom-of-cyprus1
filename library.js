@@ -4,7 +4,7 @@ This code is responsible for building the "LIBRARY" page.
 
 // Imports.
 var constants = require("./constants.js");
-var cutil = require("./cutil.js");
+var cutil = require("./cutil.js"), util = cutil.getClass();
 var final = require("./final.js");
 var sql = require("sqlite3");
 var db = new sql.Database("canons.db");
@@ -20,25 +20,6 @@ module.exports = {
     fetch(request, response, type, err, contents);
   }
 };
-
-/* 
-####################
-# HELPER FUNCTIONS #
-####################
-*/
-
-// "Absolute Replace" replaces a given substring.
-function absRep(bigstring, lilstring, rep)
-{
-  var count = 0;
-  while((bigstring.indexOf(lilstring) >= 0) &&
-        (count < constants.maxloops))
-  {
-    bigstring = bigstring.replace(lilstring, rep);
-    count++;
-  }
-  return(bigstring);
-}
 
 /*
 ###########################
@@ -76,34 +57,31 @@ function begin(response, type, err, contents, data)
 // Makes the table of works by Golden Age poets.
 function makePoets(response, type, err, contents, data)
 {
-  var poets = "", row = "", inCat = "", title = "", notes = "";
-  var tableHeader = "<table class=\"conq\">\n<tr> <th>Poet</th> "+
-                    "<th>Title</th> <th>Year</th> "+
-                    "<th> On the <a href=\"catalogue.html\">"+
-                    "Catalogue</a></th> <th>Notes</th> </tr>\n";
+  var result = "";
+  var row = [];
+  var columns = ["Poet", "Title", "Year",
+                 "On the <a href=\"catalogue.html\">Catalogue</a>",
+                 "Notes"];
+  var table = util.getTable()
 
+  table.setHTMLClass("conq");
+  table.setColumns(columns);
   for(var i = 0; i < data.length; i++)
   {
-    if(data[i].inCatalogue === trueInt) inCat = "yes";
-    else inCat = "no";
-    if(data[i].link === null) title = data[i].title;
-    else
-    {
-      title = "<a href=\""+data[i].link+"\">"+data[i].title+"</a>";
-    }
-    if(data[i].notes === null) notes = "None.";
-    else notes = data[i].notes;
-
-    row = "<tr> <td>"+data[i].fullTitle+"</td> "+
-          "<td><em>"+title+"</em></td> "+
-          "<td>"+data[i].yearPublished+"</td> "+
-          "<td>"+inCat+"</td> <td>"+notes+"</td> </tr>\n";
-    poets = poets+row;
+    row = [];
+    row.push(data[i].fullTitle);
+    row.push(util.linkify(data[i].title, data[i].link));
+    row.push(data[i].yearPublished);
+    row.push(util.digitToYesNo(data[i].inCatalogue));
+    row.push(util.deNullify(data[i].notes));
+    table.addRow(row);
   }
-  poets = tableHeader+poets+" </table>";
+  table.buildHTMLPrintout();
 
-  contents = absRep(contents, "GOLDENPOETS", poets);
-  fetchAnthologies(response, type, err, contents, data);
+  result = table.htmlPrintout;
+  contents = util.absRep(contents, "GOLDENPOETS", result);
+
+  fetchAnthologies(response, type, err, contents);
 }
 
 /*
@@ -159,7 +137,7 @@ function makeAnthologies(response, type, err, contents, data)
   }
   anth = tableHeader+anth+" </table>";
 
-  contents = absRep(contents, "ANTHOLOGIES", anth);
+  contents = util.absRep(contents, "ANTHOLOGIES", anth);
 
   fetchOtherPoets(response, type, err, contents);
 }
@@ -194,30 +172,27 @@ function fetchOtherPoets(response, type, err, contents)
 // Makes the table of works by other poets.
 function makeOtherPoets(response, type, err, contents, data)
 {
-  var poets = "", row = "", inCat = "", title = "", notes = "";
-  var tableHeader = "<table class=\"conq\">\n<tr> <th>Poet</th> "+
-                    "<th>Title</th> <th>Year</th> "+
-                    "<th>Notes</th> </tr>\n";
+  var result = "";
+  var row = [];
+  var columns = ["Poet", "Title", "Year", "Notes"];
+  var table = util.getTable();
 
+  table.setHTMLClass("conq");
+  table.setColumns(columns);
   for(var i = 0; i < data.length; i++)
   {
-    if(data[i].link === null) title = data[i].title;
-    else
-    {
-      title = "<a href=\""+data[i].link+"\">"+data[i].title+"</a>";
-    }
-    if(data[i].notes === null) notes = "None.";
-    else notes = data[i].notes;
-
-    row = "<tr> <td>"+data[i].fullTitle+"</td> "+
-          "<td><em>"+title+"</em></td> "+
-          "<td>"+data[i].yearPublished+"</td> "+
-          "<td>"+notes+"</td> </tr>\n";
-    poets = poets+row;
+    row = [];
+    row.push(data[i].fullTitle);
+    row.push(util.linkify(data[i].title));
+    row.push(data[i].yearPublished);
+    row.push(util.deNullify(data[i].notes));
+    table.addRow(row);
   }
-  poets = tableHeader+poets+" </table>";
+  table.buildHTMLPrintout();
 
-  contents = absRep(contents, "OTHERPOETS", poets);
+  result = table.htmlPrintout;
+  contents = util.absRep(contents, "OTHERPOETS", result);
+
   fetchPoetryRelated(response, type, err, contents);
 }
 
@@ -249,32 +224,26 @@ function fetchPoetryRelated(response, type, err, contents)
 // Makes the table of poetry-related books.
 function makeOthers(response, type, err, contents, data)
 {
-  var others = "", row = "", title = "", author = "";
-  var tableHeader = "<table class=\"conq\"> <tr> <th>Author</th> "+
-                    "<th>Title</th> <th>Year</th> "+
-                    "<th>Notes</th> </tr>\n";
+  var result = "";
+  var row = [];
+  var columns = ["Author", "Title", "Year", "Notes"];
+  var table = util.getTable();
 
+  table.setHTMLClass("conq");
+  table.setColumns(columns);
   for(var i = 0; i < data.length; i++)
   {
-    if(data[i].link === null) title = data[i].title;
-    else
-    {
-      title = "<a href=\""+data[i].link+"\">"+data[i].title+"</a>";
-    }
-    if(data[i].author === null) author = "N/A";
-    else author = data[i].fullTitle;
-    if(data[i].notes === null) notes = "None.";
-    else notes = data[i].notes;
-
-    row = "<tr> <td>"+data[i].fullTitle+"</td> "+
-          "<td><em>"+title+"</em></td> "+
-          "<td>"+data[i].yearPublished+"</td> "+
-          "<td>"+notes+"</td> </tr>\n";
-    others = others+row;
+    row = [];
+    row.push(data[i].fullTitle);
+    row.push(util.linkify(data[i].title));
+    row.push(data[i].yearPublished);
+    row.push(util.deNullify(data[i].notes));
+    table.addRow(row);
   }
-  others = tableHeader+others+" </table>";
+  table.buildHTMLPrintout();
+  result = table.htmlPrintout;
 
-  contents = absRep(contents, "POETRYRELATED", others);
+  contents = util.absRep(contents, "POETRYRELATED", result);
 
   final.wrapup(response, type, err, contents);
 }
