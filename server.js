@@ -6,6 +6,7 @@ been changed significantly by me since then.
 // Constants.
 var port = 8443;
 var verbose = true;
+var unauthorised = 401;
 var password = "mellon";
 var types, banned;
 
@@ -146,7 +147,7 @@ function authenticate(request, response)
   {
     response.setHeader("WWW-Authenticate",
                        "Basic realm=\"The Sergalio\"");
-    return(fail(response, 401, "Access denied."))
+    return(final.fail(response, unauthorised, "Access denied."))
   }
   else
   {
@@ -160,7 +161,7 @@ function authenticate(request, response)
     var pw = credentialsQD[1];
     if(pw != password)
     {
-      return(fail(response, 401, "Access denied."))
+      return(final.fail(response, unauthorised, "Access denied."))
     }
   }
   handle(request, response);

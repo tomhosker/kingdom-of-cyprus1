@@ -89,6 +89,19 @@ class CUtil
     if(s === null) return("None.");
     else return(s);
   }
+
+  // Returns a linked version of a person's short title.
+  makeLinkedST(id, shortTitle, rankTier, style)
+  {
+    var result = "<a href=\"persona"+id+"b.html\">"+shortTitle+"</a>";
+
+    if((rankTier >= constants.marquessRank) && (style !== null))
+    {
+      result = style+" "+result;
+    }
+
+    return(result);
+  }
 }
 
 // Ronseal.

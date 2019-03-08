@@ -23,18 +23,6 @@ module.exports = {
 ####################
 */
 
-// Returns a linked version of a person's short title.
-function makeLinkedST(id, shortTitle, rankTier, style)
-{
-  var result = "<a href=\"persona"+id+"b.html\">"+shortTitle+"</a>";
-
-  if((rankTier >= constants.marquessRank) && (style !== null))
-  {
-    result = style+" "+result;
-  }
-  return(result);
-}
-
 // Ronseal.
 function buildManors(manors)
 {
@@ -48,8 +36,10 @@ function buildManors(manors)
   {
     manor = "<a href=\"manora"+manors[i].manorID+"b.html\">"+
             manors[i].manorName+"</a>";
-    master = makeLinkedST(manors[i].masterID, manors[i].masterShortTitle,
-                          manors[i].masterRankTier, manors[i].masterStyle);
+    master = util.makeLinkedST(manors[i].masterID,
+                               manors[i].masterShortTitle,
+                               manors[i].masterRankTier,
+                               manors[i].masterStyle);
     row = [manor, master];
     table.addRow(row);
   }
@@ -59,9 +49,9 @@ function buildManors(manors)
 }
 
 /*
-##############
-# FETCH DATA #
-##############
+#########
+# START #
+#########
 */
 
 // Fetches the required data from the database.
@@ -92,16 +82,15 @@ function fetch(request, response, type, err, contents)
   }
 }
 
-// Ronseal.
 function begin(response, type, err, contents, id, data)
 {
   id = data.access("barony")[0].id;
 
-  fetchPerson(response, type, err, contents, id, data);
+  fetchBaron(response, type, err, contents, id, data);
 }
 
-// Fetches the "Person" table from the database.
-function fetchPerson(response, type, err, contents, id, data)
+// Ronseal.
+function fetchBaron(response, type, err, contents, id, data)
 {
   var query = "SELECT * FROM Person WHERE id = ?;";
   var baronID = data.access("barony")[0].id;
@@ -112,12 +101,12 @@ function fetchPerson(response, type, err, contents, id, data)
   {
     if(err) throw err;
     data.add("baron", extract);
-    fetchManor(response, type, err, contents, id, data);
+    fetchManors(response, type, err, contents, id, data);
   }
 }
 
 // Fetches the "Manor" table from the database.
-function fetchManor(response, type, err, contents, id, data)
+function fetchManors(response, type, err, contents, id, data)
 {
   var query = "SELECT Manor.id AS manorID, "+
                      "Manor.name AS manorName, "+
@@ -167,8 +156,8 @@ function makeReplacements(response, type, err, contents, id, data)
       description = "", manorsString = "";
 
   name = barony.name;
-  baronName = makeLinkedST(baron.id, baron.shortTitle, baron.rankTier,
-                           baron.style);
+  baronName = util.makeLinkedST(baron.id, baron.shortTitle, baron.rankTier,
+                                baron.style);
   theCounty = "<a href=\"countya"+county.id+"b.html\">"+county.name+"</a>";
 
   if(barony.arms === null) arms = "";
@@ -184,7 +173,7 @@ function makeReplacements(response, type, err, contents, id, data)
   if(barony.description === null)
   {
     description = "The <strong>"+name+"</strong> is a barony of the "+
-                  "County of "+theCounty+".";
+                  theCounty+".";
   }
   else description = barony.description;
 

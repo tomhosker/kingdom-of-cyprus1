@@ -1,9 +1,10 @@
 /*
-This code is responsible for building the various "Barony" pages.
+This code is responsible for building the various "Duchy" pages.
 */
 
 // Imports.
 var constants = require("./constants.js");
+var cutil = require("./cutil.js"), util = cutil.getClass();
 var final = require("./final.js");
 var sql = require("sqlite3");
 var db = new sql.Database("cyprus.db");
@@ -22,80 +23,35 @@ module.exports = {
 ####################
 */
 
-// "Absolute Replace" replaces a given substring.
-function absRep(bigstring, lilstring, rep)
-{
-  var count = 0;
-  while((bigstring.indexOf(lilstring) >= 0) &&
-        (count < constants.maxloops))
-  {
-    bigstring = bigstring.replace(lilstring, rep);
-    count++;
-  }
-  return(bigstring);
-}
-
-// "Conditional Replace" replaces a sub-string with (0) or (1).
-function conRep(bigstring, lilstring, rep0, rep1)
-{
-  var count = 0;
-  if(rep0 != null)
-  {
-    while((bigstring.indexOf(lilstring) >= 0) &&
-          (count < constants.maxloops))
-    {
-      bigstring = bigstring.replace(lilstring, rep0);
-      count++;
-    }
-  }
-  else
-  {
-    while((bigstring.indexOf(lilstring) >= 0) &&
-          (count < constants.maxloops))
-    {
-      bigstring = bigstring.replace(lilstring, rep1);
-      count++;
-    }
-  }
-  return(bigstring);
-}
-
 // Ronseal.
-function getPersonName(id, person)
+function buildCounties(counties)
 {
-  var name = "";
-  for(var i = 0; i < person.length; i++)
-  {
-    if(person[i].id === id)
-    {
-      name = "<a href=\"persona"+id+"b.html\">"+
-             person[i].shortTitle+"</a>";
-      return(name);
-    }
-  }
-  return("<em>Invalid ID</em>");
-}
+  var result = "";
+  var table = util.getTable();
+  var row = [];
+  var county = "", earl = "";
 
-// Ronseal.
-function makeCounties(county, person)
-{
-  var counties = "<table> <tr> <th>County</th> <th>Earl</th> </tr>";
-  for(var i = 0; i < county.length; i++)
+  table.setColumns(["County", "Earl"]);
+  for(var i = 0; i < counties.length; i++)
   {
-    counties = counties+"<tr> <td><a href=\"countya"+county[i].id+
-               "b.html\">"+county[i].name+"</a></td>"+
-               "<td>"+getPersonName(county[i].earl, person)+
-               "</td> </tr> ";
+    county = "<a href=\"countya"+counties[i].countyID+"b.html\">"+
+             counties[i].countyName+"</a>";
+    earl = util.makeLinkedST(counties[i].earlID,
+                             counties[i].earlShortTitle,
+                             counties[i].earlRankTier,
+                             counties[i].earlStyle);
+    row = [county, earl];
+    table.addRow(row);
   }
-  counties = counties+"</table>";
-  return(counties);
+  result = table.buildHTMLPrintout();
+
+  return(result);
 }
 
 /*
-#####################
-#    FIRST PASS     #
-# Data from "Duchy" #
-#####################
+#########
+# START #
+#########
 */
 
 // Fetches the required data from the database.
@@ -103,134 +59,117 @@ function fetch(request, response, type, err, contents)
 {
   "use strict";
   var url = request.url.toLowerCase();
-
   var a = url.indexOf("a")+1;
   var b = url.indexOf("b");
   var id = 0;
-  if((a > 0) && (b > 0))
+  var query = "SELECT * FROM Duchy WHERE id = ?;";
+  var data = util.getDataDictionary();
+
+  if((a > 0) && (b > a))
   {
     id = url.substr(a, b-a);
     id = parseInt(id);
   }
-  else return(fail(response, NotFound, "No such page."));
+  else return(final.fail(response, constants.NotFound, "No ID."));
 
-  var query = "SELECT * FROM Duchy WHERE id = "+id+";";
-  db.all(query, ready);
+  db.all(query, [id], ready);
 
-  function ready(err, data)
+  function ready(err, extract)
   {
     if(err) throw err;
     if(data.length < 1)
     {
-      return(fail(response, NotFound, "No such page."));
+      return(final.fail(response, constant.NotFound, "No such page."));
     }
+    data.add("duchy", extract);
     begin(response, type, err, contents, id, data);
   }
 }
 
-// Ronseal.
 function begin(response, type, err, contents, id, data)
 {
-  fetchPerson(response, type, err, contents, id, data);
+  id = data.access("duchy")[0].id;
+
+  fetchDuke(response, type, err, contents, id, data);
 }
 
-// Fetches the "Person" table from the database.
-function fetchPerson(response, type, err, contents, id, data)
+// Ronseal.
+function fetchDuke(response, type, err, contents, id, data)
 {
-  var query = "SELECT * FROM Person;";
-  db.all(query, ready);
+  var query = "SELECT * FROM Person WHERE id = ?;";
+  var dukeID = data.access("duchy")[0].duke;
 
-  function ready(err, person)
+  db.all(query, [dukeID], ready);
+
+  function ready(err, extract)
   {
     if(err) throw err;
-    fetchCounty(response, type, err, contents, id,
-                data, person);
+    data.add("duke", extract);
+    fetchCounties(response, type, err, contents, id, data);
   }
 }
 
-// Fetches the "Person" table from the database.
-function fetchCounty(response, type, err, contents, id,
-                     data, person)
+// Ronseal.
+function fetchCounties(response, type, err, contents, id, data)
 {
-  var query = "SELECT * FROM County WHERE duchy = "+id+" "+
-              "ORDER BY "+"seniority;";
-  db.all(query, ready);
+  var query = "SELECT County.id AS countyID, "+
+                     "County.name AS countyName, "+
+                     "Person.id AS earlID, "+
+                     "Person.shortTitle AS earlShortTitle, "+
+                     "Person.rankTier AS earlRankTier, "+
+                     "Person.style AS earlStyle "+
+              "FROM County "+
+              "JOIN Person ON Person.id = County.earl "+
+              "WHERE County.duchy = ? "+
+              "ORDER BY County.seniority;";
 
-  function ready(err, county)
+  db.all(query, [id], ready);
+
+  function ready(err, extract)
   {
     if(err) throw err;
-    makeReplacements(response, type, err, contents, id,
-                     data, person, county);
+    data.add("counties", extract);
+    makeReplacements(response, type, err, contents, id, data);
   }
 }
 
-// Makes the simple replacements.
-function makeReplacements(response, type, err, contents, id,
-                          data, person, county)
+// Ronseal.
+function makeReplacements(response, type, err, contents, id, data)
 {
-  var name = "";
-  var arms = "";
-  var duke = "";
-  var description = "";
-  var counties = "";
+  var duchy = data.access("duchy")[0];
+  var duke = data.access("duke")[0];
+  var counties = data.access("counties");
+  var name = "", arms = "", dukeName = "", description = "",
+      countiesString = "";
 
-  name = data[0].name;
-  if(data[0].arms === null) arms = "";
+  name = duchy.name;
+  dukeName = util.makeLinkedST(duke.id, duke.shortTitle, duke.rankTier,
+                               duke.style);
+
+  if(duchy.arms === null) arms = "";
   else
   {
-     arms = "<br/><img src=\"images/"+data[0].arms+"\" "+
-            "alt=\"Arms\" align=\"center\" "+
-            "width=\"200px\" style=\"margin: 1em\"/>";
+     arms = "<br/><img src=\"images/"+duchy.arms+"\" "+
+                      "alt=\"Arms\" "+
+                      "align=\"center\" "+
+                      "width=\""+constants.vsmallProfilePhotoWidth+"\" "+
+                      "style=\"margin: 1em\"/>";
   }
-  if(data[0].duke === null) duke = "<em>Vacant</em>";
-  else duke = getPersonName(data[0].duke, person);
-  if(data[0].description === null)
-  {
-    description = "The <strong>"+name+"</strong> is a duchy.";
-  }
-  else description = data[0].description;
-  if(county.length === 0) counties = "<p> <em>None.</em> </p>";
-  else counties = makeCounties(county, person);
 
-  contents = absRep(contents, "NAME", name);
-  contents = absRep(contents, "ARMS", arms);
-  contents = absRep(contents, "DUKE", duke);
-  contents = absRep(contents, "DESCRIPTION", description);
-  contents = absRep(contents, "COUNTIES", counties);
+  if(duchy.description === null)
+  {
+    description = "The <strong>"+name+"</strong> is a duchy of "+
+                  "the Kingdom.";
+  }
+  else description = duchy.description;
+
+  countiesString = buildCounties(counties);
+
+  contents = util.absRep(contents, "NAME", name);
+  contents = util.absRep(contents, "ARMS", arms);
+  contents = util.absRep(contents, "DUKE", dukeName);
+  contents = util.absRep(contents, "DESCRIPTION", description);
+  contents = util.absRep(contents, "COUNTIES", countiesString);
 
   final.wrapup(response, type, err, contents);
-}
-
-/* 
-###########
-# WRAP UP #
-###########
-*/
-
-// Some final prettification.
-function finalTouches(response, type, err, contents)
-{
-  // Prettify quotation marks.
-  contents = absRep(contents, "`", "&#8216;");
-  contents = absRep(contents, "'", "&#8217;");
-
-  deliver(response, type, err, contents)
-}
-
-// Delivers the file that has been read in to the browser.
-function deliver(response, type, err, contents)
-{
-  var typeHeader = { "Content-Type": type };
-  response.writeHead(OK, typeHeader);
-  response.write(contents);
-  response.end();
-}
-
-// IAN'S FUNCTION.
-// Give a minimal failure response to the browser
-function fail(response, code, text) {
-    var textTypeHeader = { "Content-Type": "text/plain" };
-    response.writeHead(code, textTypeHeader);
-    response.write(text, "utf8");
-    response.end();
 }
