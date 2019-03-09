@@ -72,7 +72,10 @@ class CUtil
   // Linkifies a book's title, if appropriate.
   linkify(title, link)
   {
-    if(link === null) return("<em>"+title+"</em>");
+    if((link === null) || (link === undefined))
+    {
+      return("<em>"+title+"</em>");
+    }
     else return("<em><a href=\""+link+"\">"+title+"</a></em>");
   }
 
@@ -84,9 +87,13 @@ class CUtil
   }
 
   // Replaces a null value with an appropriate string.
-  deNullify(s)
+  deNullify(s, terminator)
   {
-    if(s === null) return("None");
+    if(s === null)
+    {
+      if(terminator === undefined) return("None");
+      else return("None"+terminator);
+    }
     else return(s);
   }
 

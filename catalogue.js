@@ -153,7 +153,7 @@ function makePoets(response, type, err, contents, data)
       title = "<em>"+data[i].title+"</em>";
       year = data[i].yearPublished;
       inLib = util.digitToYesNo(data[i].inLibrary);
-      notes = util.deNullify(data[i].notes);
+      notes = util.deNullify(data[i].notes, ".");
 
       row = [poet, title, year, inLib, notes];
       table.addRow(row);
@@ -185,7 +185,7 @@ function makeAnthology(response, type, err, contents, data)
       title = "<em>"+data[i].title+"</em>";
       year = data[i].yearPublished;
       inLib = util.digitToYesNo(data[i].inLibrary);
-      notes = util.deNullify(data[i].notes);
+      notes = util.deNullify(data[i].notes, ".");
 
       row = [title, year, inLib, notes];
       table.addRow(row);
@@ -222,7 +222,7 @@ function makeSacred(response, type, err, contents, data)
     title = "<em>"+data[i].title+"</em>";
     year = data[i].yearPublished;
     inLib = util.digitToYesNo(data[i].inLibrary);
-    notes = util.deNullify(data[i].notes);
+    notes = util.deNullify(data[i].notes, ".");
     row = [poet, title, year, inLib, notes];
 
     if(isHebrew(data[i])) hebrew.addRow(row);
@@ -260,7 +260,7 @@ function makeTreasures(response, type, err, contents, data)
       title = "<em>"+data[i].title+"</em>";
       year = data[i].yearPublished;
       inLib = util.digitToYesNo(data[i].inLibrary);
-      notes = util.deNullify(data[i].notes);
+      notes = util.deNullify(data[i].notes, ".");
 
       row = [author, title, year, inLib, notes];
       table.addRow(row);
@@ -293,7 +293,7 @@ function makeOthers(response, type, err, contents, data)
       title = "<em>"+data[i].title+"</em>";
       year = data[i].yearPublished;
       inLib = util.digitToYesNo(data[i].inLibrary);
-      notes = util.deNullify(data[i].notes);
+      notes = util.deNullify(data[i].notes, ".");
 
       row = [author, title, year, inLib, notes];
       table.addRow(row);

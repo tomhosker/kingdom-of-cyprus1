@@ -4,6 +4,7 @@ This code is responsible for building the "CINEMA" page.
 
 // Imports.
 var constants = require("./constants.js");
+var cutil = require("./cutil.js"), util = cutil.getClass();
 var final = require("./final.js");
 var sql = require("sqlite3");
 var db = new sql.Database("canons.db");
@@ -30,26 +31,11 @@ module.exports = {
 ####################
 */
 
-// "Absolute Replace" replaces a given substring.
-function absRep(bigstring, lilstring, rep)
-{
-  var count = 0;
-  while((bigstring.indexOf(lilstring) >= 0) &&
-        (count < constants.maxloops))
-  {
-    bigstring = bigstring.replace(lilstring, rep);
-    count++;
-  }
-  return(bigstring);
-}
-
 // Determines if a film is in Book I.
-function isBookI(data, i)
+function isBookI(row)
 {
-  if((data[i].genre === "tragedy") &&
-     (data[i].topTen === null) &&
-     (data[i].rank > partLength) &&
-     (data[i].rank < (bookiLength+partLength)))
+  if((row.genre === "tragedy") && (row.topTen === null) &&
+     (row.rank > partLength) && (row.rank < (bookiLength+partLength)))
   {
     return(true);
   }
@@ -57,12 +43,10 @@ function isBookI(data, i)
 }
 
 // Determines if a film is in Book II.
-function isBookII(data, i)
+function isBookII(row)
 {
-  if((data[i].genre === "comedy") &&
-     (data[i].topTen === null) &&
-     (data[i].rank > partLength) &&
-     (data[i].rank < (bookiiLength+partLength)))
+  if((row.genre === "comedy") && (row.topTen === null) &&
+     (row.rank > partLength) && (row.rank < (bookiiLength+partLength)))
   {
     return(true);
   }
@@ -70,12 +54,10 @@ function isBookII(data, i)
 }
 
 // Determines if a film is in Book III.
-function isBookIII(data, i)
+function isBookIII(row)
 {
-  if((data[i].genre === "satire") &&
-     (data[i].topTen === null) &&
-     (data[i].rank > partLength) &&
-     (data[i].rank < (bookiiiLength+partLength)))
+  if((row.genre === "satire") && (row.topTen === null) &&
+     (row.rank > partLength) && (row.rank < (bookiiiLength+partLength)))
   {
     return(true);
   }
@@ -83,12 +65,10 @@ function isBookIII(data, i)
 }
 
 // Determines if a film is in Book IV.
-function isBookIV(data, i)
+function isBookIV(row)
 {
-  if((data[i].genre === "other") &&
-     (data[i].topTen === null) &&
-     (data[i].rank > partLength) &&
-     (data[i].rank < (bookivLength+partLength)))
+  if((row.genre === "other") && (row.topTen === null) &&
+     (row.rank > partLength) && (row.rank < (bookivLength+partLength)))
   {
     return(true);
   }
@@ -96,11 +76,11 @@ function isBookIV(data, i)
 }
 
 // Determines if a film is in Book V Part 1.
-function isVPart1(data, i)
+function isVPart1(row)
 {
-  if((data[i].genre === "tragedy") &&
-     (data[i].topTen === null) &&
-     (data[i].rank <= partLength))
+  if((row.genre === "tragedy") &&
+     (row.topTen === null) &&
+     (row.rank <= partLength))
   {
     return(true);
   }
@@ -108,11 +88,11 @@ function isVPart1(data, i)
 }
 
 // Determines if a film is in Book V Part 2.
-function isVPart2(data, i)
+function isVPart2(row)
 {
-  if((data[i].genre === "comedy") &&
-     (data[i].topTen === null) &&
-     (data[i].rank <= partLength))
+  if((row.genre === "comedy") &&
+     (row.topTen === null) &&
+     (row.rank <= partLength))
   {
     return(true);
   }
@@ -120,11 +100,11 @@ function isVPart2(data, i)
 }
 
 // Determines if a film is in Book V Part 3.
-function isVPart3(data, i)
+function isVPart3(row)
 {
-  if((data[i].genre === "satire") &&
-     (data[i].topTen === null) &&
-     (data[i].rank <= partLength))
+  if((row.genre === "satire") &&
+     (row.topTen === null) &&
+     (row.rank <= partLength))
   {
     return(true);
   }
@@ -132,11 +112,11 @@ function isVPart3(data, i)
 }
 
 // Determines if a film is in Book V Part 4.
-function isVPart4(data, i)
+function isVPart4(row)
 {
-  if((data[i].genre === "other") &&
-     (data[i].topTen === null) &&
-     (data[i].rank <= partLength))
+  if((row.genre === "other") &&
+     (row.topTen === null) &&
+     (row.rank <= partLength))
   {
     return(true);
   }
@@ -144,176 +124,160 @@ function isVPart4(data, i)
 }
 
 // Determines if a film is in Book V Part 5.
-function isVPart5(data, i)
+function isVPart5(row)
 {
-  if(data[i].topTen === null) return(false);
+  if(row.topTen === null) return(false);
   else return(true);
 }
 
 // Calculates the film's number in the canon.
-function getOrdinal(data, i)
+function getOrdinal(row)
 {
   var start = 0;
 
-  if(isVPart5(data, i))
+  if(isVPart5(row))
   {
     start = canonLength+1;
-    n = start-data[i].topTen;
+    n = start-row.topTen;
   }
-  else if(isVPart4(data, i))
+  else if(isVPart4(row))
   {
     start = cannonLength-partLength+1;
-    n = start-data[i].rank;
+    n = start-row.rank;
   }
-  else if(isVPart3(data, i))
+  else if(isVPart3(row))
   {
     start = cannonLength-(2*partLength)+1;
-    n = start-data[i].rank;
+    n = start-row.rank;
   }
-  else if(isVPart2(data, i))
+  else if(isVPart2(row))
   {
     start = cannonLength-(3*partLength)+1;
-    n = start-data[i].rank;
+    n = start-row.rank;
   }
-  else if(isVPart1(data, i))
+  else if(isVPart1(row))
   {
     start = cannonLength-(4*partLength)+1;
-    n = start-data[i].rank;
+    n = start-row.rank;
   }
-  else if(isBookIV(data, i))
+  else if(isBookIV(row))
   {
-    start = bookiLength+bookiiLength+bookiiiLength+
-            bookivLength+1;
-    n = start-data[i].rank;
+    start = bookiLength+bookiiLength+bookiiiLength+bookivLength+1;
+    n = start-row.rank;
   }
-  else if(isBookIII(data, i))
+  else if(isBookIII(row))
   {
     start = bookiLength+bookiiLength+bookiiiLength+1;
-    n = start-data[i].rank;
+    n = start-row.rank;
   }
-  else if(isBookII(data, i))
+  else if(isBookII(row))
   {
     start = bookiLength+bookiiLength+1;
-    n = start-data[i].rank;
+    n = start-row.rank;
   }
-  else if(isBookI(data, i))
+  else if(isBookI(row))
   {
     start = bookiLength+1;
-    n = start-data[i].rank;
+    n = start-row.rank;
   }
   else n = 0;
 
   return(n);
 }
 
-// Ronseal.
-function makeRow(data, i, n)
-{
-  var row = "";
-  var ordinal = "<td>"+n+"</td>";
-  var title = "";
-  var year = "<td>"+data[i].year+"</td>";
-  var notes = "";
-
-  if(data[i].link === null)
-  {
-    title = "<td><em>"+data[i].title+"</em></td>";
-  }
-  else
-  {
-    title = "<td><em><a href=\""+link+"\">"+
-            data[i].title+"</a></em></td>";
-  }
-
-  if(data[i].notes === null) notes = "<em>None.</em>";
-  else notes = data[i].notes;
-  notes = "<td>"+notes+"</td>";
-
-  row = "<tr> "+ordinal+" "+title+" "+year+" "+notes+" </tr>";
-  return(row);
-}
-
 /*
-####################
-#    FIRST PASS    #
-# Data from "Film" #
-####################
+#########
+# START #
+#########
 */
 
 // Fetches the required data from the database.
 function fetch(request, response, type, err, contents)
 {
   "use strict";
-  var query = "SELECT * FROM FILM "+
-              "ORDER BY topTen DESC, rank DESC;";
+  var query = "SELECT * FROM FILM ORDER BY topTen DESC, rank DESC;";
 
   db.all(query, ready);
 
   function ready(err, data)
   {
     if(err) throw err;
-    begin(response, type, err, contents, data);
+    makeCinema(response, type, err, contents, data);
   }
-}
-
-// Ronseal.
-function begin(response, type, err, contents, data)
-{
-  makeCinema(response, type, err, contents, data);
 }
 
 // Makes the table of works by Golden Age poets.
 function makeCinema(response, type, err, contents, data)
 {
-  var booki = ""; var bookii = ""; var bookiii = "";
-  var bookiv = ""; var vPart1 = ""; var vPart2 = "";
-  var vPart3 = ""; var vPart4 = ""; var vPart5 = "";
-  var tableHeader = "<table class=\"conq\"> <tr> <th>No</th> "+
-                    "<th>Title</th> <th>Year</th> <th>Notes</th> "+
-                    "</tr>";
+  var bookiString = "", bookiiString = "", bookiiiString = "",
+      bookivString = "", vPart1String = "", vPart2String = "",
+      vPart3String = "", vPart4String = "", vPart5String = "";
+  var booki = util.getTable(), bookii = util.getTable(),
+      bookiii = util.getTable(), bookiv = util.getTable(),
+      vPart1 = util.getTable(), vPart2 = util.getTable(),
+      vPart3 = util.getTable(), vPart4 = util.getTable(),
+      vPart5 = util.getTable();
+  var columns = ["No", "Title", "Year", "Notes"];
+  var no = 0, year = 0;
+  var title = "", notes = "";
+  var row = [];
+
+  booki.setHTMLClass("conq");
+  booki.setColumns(columns);
+  bookii.setHTMLClass("conq");
+  bookii.setColumns(columns);
+  bookiii.setHTMLClass("conq");
+  bookiii.setColumns(columns);
+  bookiv.setHTMLClass("conq");
+  bookiv.setColumns(columns);
+  vPart1.setHTMLClass("conq");
+  vPart1.setColumns(columns);
+  vPart2.setHTMLClass("conq");
+  vPart2.setColumns(columns);
+  vPart3.setHTMLClass("conq");
+  vPart3.setColumns(columns);
+  vPart4.setHTMLClass("conq");
+  vPart4.setColumns(columns);
+  vPart5.setHTMLClass("conq");
+  vPart5.setColumns(columns);
 
   for(var i = 0; i < data.length; i++)
   {
-    n = getOrdinal(data, i);
-    if(isVPart5(data, i)) vPart5 = vPart5+makeRow(data, i, n);
-    else if(isVPart4(data, i)) vPart4 = vPart4+makeRow(data, i, n);
-    else if(isVPart3(data, i)) vPart3 = vPart3+makeRow(data, i, n);
-    else if(isVPart2(data, i)) vPart2 = vPart2+makeRow(data, i, n);
-    else if(isVPart1(data, i)) vPart1 = vPart1+makeRow(data, i, n);
-    else if(isBookIV(data, i)) bookiv = bookiv+makeRow(data, i, n);
-    else if(isBookIII(data, i)) bookiii = bookiii+makeRow(data, i, n);
-    else if(isBookII(data, i)) bookii = bookii+makeRow(data, i, n);
-    else if(isBookI(data, i)) booki = booki+makeRow(data, i, n);
+    no = getOrdinal(data[i]);
+    title = util.linkify(data[i].title, data[i].link);
+    year = data[i].year;
+    notes = util.deNullify(data[i].notes, ".");
+    row = [no, title, year, notes];
+
+    if(isVPart5(data[i])) vPart5.addRow(row);
+    else if(isVPart4(data[i])) vPart4.addRow(row);
+    else if(isVPart3(data[i])) vPart3.addRow(row);
+    else if(isVPart2(data[i])) vPart2.addRow(row);
+    else if(isVPart1(data[i])) vPart1.addRow(row);
+    else if(isBookIV(data[i])) bookiv.addRow(row);
+    else if(isBookIII(data[i])) bookiii.addRow(row);
+    else if(isBookII(data[i])) bookii.addRow(row);
+    else if(isBookI(data[i])) booki.addRow(row);
   }
+  bookiString = booki.buildHTMLPrintout();
+  bookiiString = bookii.buildHTMLPrintout();
+  bookiiiString = bookiii.buildHTMLPrintout();
+  bookivString = bookiv.buildHTMLPrintout();
+  vPart1String = vPart1.buildHTMLPrintout();
+  vPart2String = vPart2.buildHTMLPrintout();
+  vPart3String = vPart3.buildHTMLPrintout();
+  vPart4String = vPart4.buildHTMLPrintout();
+  vPart5String = vPart5.buildHTMLPrintout();
 
-  if(booki === "") booki = "<p> <em>None as yet.</em> </p>";
-  else booki = tableHeader+booki+" </table>";
-  if(bookii === "") bookii = "<p> <em>None as yet.</em> </p>";
-  else bookii = tableHeader+bookii+" </table>";
-  if(bookiii === "") bookiii = "<p> <em>None as yet.</em> </p>";
-  else bookiii = tableHeader+bookiii+" </table>";
-  if(bookiv === "") bookiv = "<p> <em>None as yet.</em> </p>";
-  else bookiv = tableHeader+bookiv+" </table>";
-  if(vPart1 === "") vPart1 = "<p> <em>None as yet.</em> </p>";
-  else vPart1 = tableHeader+vPart1+" </table>";
-  if(vPart2 === "") vPart2 = "<p> <em>None as yet.</em> </p>";
-  else vPart2 = tableHeader+vPart2+" </table>";
-  if(vPart3 === "") vPart3 = "<p> <em>None as yet.</em> </p>";
-  else vPart3 = tableHeader+vPart3+" </table>";
-  if(vPart4 === "") vPart4 = "<p> <em>None as yet.</em> </p>";
-  else vPart4 = tableHeader+vPart4+" </table>";
-  if(vPart5 === "") vPart5 = "<p> <em>None as yet.</em> </p>";
-  else vPart5 = tableHeader+vPart5+" </table>";
-
-  contents = absRep(contents, "BOOKONE", booki);
-  contents = absRep(contents, "BOOKTWO", bookii);
-  contents = absRep(contents, "BOOKTHREE", bookiii);
-  contents = absRep(contents, "BOOKFOUR", bookiv);
-  contents = absRep(contents, "FIVEPARTONE", vPart1);
-  contents = absRep(contents, "FIVEPARTTWO", vPart2);
-  contents = absRep(contents, "FIVEPARTTHREE", vPart3);
-  contents = absRep(contents, "FIVEPARTFOUR", vPart4);
-  contents = absRep(contents, "FIVEPARTFIVE", vPart5);
+  contents = util.absRep(contents, "BOOKONE", bookiString);
+  contents = util.absRep(contents, "BOOKTWO", bookiiString);
+  contents = util.absRep(contents, "BOOKTHREE", bookiiiString);
+  contents = util.absRep(contents, "BOOKFOUR", bookivString);
+  contents = util.absRep(contents, "FIVEPARTONE", vPart1String);
+  contents = util.absRep(contents, "FIVEPARTTWO", vPart2String);
+  contents = util.absRep(contents, "FIVEPARTTHREE", vPart3String);
+  contents = util.absRep(contents, "FIVEPARTFOUR", vPart4String);
+  contents = util.absRep(contents, "FIVEPARTFIVE", vPart5String);
 
   final.wrapup(response, type, err, contents);
 }

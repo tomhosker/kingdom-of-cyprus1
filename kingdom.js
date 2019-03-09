@@ -4,6 +4,7 @@ This code is responsible for building the LIST of "County" pages.
 
 // Imports.
 var constants = require("./constants.js");
+var cutil = require("./cutil.js"), util = cutil.getClass();
 var final = require("./final.js");
 var sql = require("sqlite3");
 var db = new sql.Database("cyprus.db");
@@ -16,20 +17,36 @@ module.exports = {
   }
 };
 
-/*
+/* 
 ####################
 # HELPER FUNCTIONS #
 ####################
 */
 
 // Ronseal.
-function extractName(id, person)
+function buildDuchies(duchies)
 {
-  for(var i = 0; i < person.length; i++)
+  var result = "";
+  var table = util.getTable();
+  var row = [];
+  var duchy = "", duke = "";
+
+  table.setHTMLClass("wider");
+  table.setColumns(["Duchy", "Duke"]);
+  for(var i = 0; i < duchies.length; i++)
   {
-    if(person[i].id === id) return(person[i].shortTitle);
+    duchy = "<a href=\"duchya"+duchies[i].duchyID+"b.html\">"+
+            duchies[i].duchyName+"</a>";
+    duke = util.makeLinkedST(duchies[i].dukeID,
+                             duchies[i].dukeShortTitle,
+                             duchies[i].dukeRankTier,
+                             duchies[i].dukeStyle);
+    row = [duchy, duke];
+    table.addRow(row);
   }
-  return("<em>Invalid ID</em>");
+  result = table.buildHTMLPrintout();
+
+  return(result);
 }
 
 /*
@@ -42,48 +59,29 @@ function extractName(id, person)
 function fetch(request, response, type, err, contents)
 {
   "use strict";
-  var query = "SELECT * FROM Duchy ORDER BY seniority;";
+  var query = "SELECT Duchy.id AS duchyID, "+
+                     "Duchy.name AS duchyName, "+
+                     "Person.id AS dukeID, "+
+                     "Person.shortTitle AS dukeShortTitle, "+
+                     "Person.rankTier AS dukeRankTier, "+
+                     "Person.style AS dukeStyle "+
+              "FROM Duchy "+
+              "JOIN Person ON Person.id = Duchy.duke "+
+              "ORDER BY Duchy.seniority;";
 
   db.all(query, ready);
 
   function ready(err, data)
   {
     if(err) throw err;
-    fetchPerson(response, type, err, contents, data);
-  }
-}
-
-// Fetches the "Person" table from the database.
-function fetchPerson(response, type, err, contents, data)
-{
-  "use strict";
-  var query = "SELECT * FROM Person;";
-
-  db.all(query, ready);
-
-  function ready(err, person)
-  {
-    if(err) throw err;
-    makeReplacement(response, type, err, contents, data, person);
+    makeReplacement(response, type, err, contents, data);
   }
 }
 
 // Ronseal.
-function makeReplacement(response, type, err, contents,
-                         data, person)
+function makeReplacement(response, type, err, contents, data)
 {
-  var replacement = "<table> "+
-    "<tr> <th>Duchy</th> <th>Duke</th> </tr> ";
-  for(var i = 0; i < data.length; i++)
-  {
-    replacement = replacement+"<tr> "+
-                  "<td><a href=\"duchya"+data[i].id+"b.html\">"+
-                       data[i].name+"</a></td> "+
-                  "<td><a href=\"persona"+data[i].duke+"b.html\">"+
-                       extractName(data[i].duke, person)+
-                  "</a></td> </tr>";
-  }
-  replacement = replacement+"</table>";
+  var replacement = buildDuchies(data);
 
   contents = contents.replace("DUCHIES", replacement);
 
