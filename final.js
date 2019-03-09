@@ -94,6 +94,8 @@ function footerMaker(response, type, err, contents)
 function finalTouches(response, type, err, contents)
 {
   // Prettify quotation marks.
+  contents = util.absRep(contents, "``", constants.ldquote);
+  contents = util.absRep(contents, "''", constants.rdquote);
   contents = util.absRep(contents, "`", constants.lquote);
   contents = util.absRep(contents, "'", constants.rquote);
   contents = util.absRep(contents, "---", constants.emdash);

@@ -4,9 +4,9 @@ This code is responsible for building the "CATALOGUE" page.
 
 // Imports.
 var constants = require("./constants.js");
+var cutil = require("./cutil.js"), util = cutil.getClass();
 var final = require("./final.js");
-var sql = require("sqlite3");
-var db = new sql.Database("canons.db");
+var sql = require("sqlite3"), db = new sql.Database("canons.db");
 
 // Local constants.
 var goldenAgeStart = 1485;
@@ -30,74 +30,54 @@ module.exports = {
 ####################
 */
 
-// Ronseal.
-function arrayBuffertoString(buffer)
-{
-  return(String.fromCharCode.apply(null,
-                                   new Uint16Array(buffer)));
-}
-
-// "Absolute Replace" replaces a given substring.
-function absRep(bigstring, lilstring, rep)
-{
-  var count = 0;
-  while((bigstring.indexOf(lilstring) >= 0) &&
-        (count < constants.maxloops))
-  {
-    bigstring = bigstring.replace(lilstring, rep);
-    count++;
-  }
-  return(bigstring);
-}
-
 // Determines if a book is a "treasure".
-function isTreasure(data, i)
+function isTreasure(row)
 {
-  if(data[i].yearPublished < queenVicAccession) return(true);
+  if(row.yearPublished < queenVicAccession) return(true);
   else return(false);
 }
 
 // Determines if a book is written in Hebrew.
-function isHebrew(data, i)
+function isHebrew(row)
 {
-  if(isTreasure(data, i) === true) return(false);
-  else if(data[i].genre === "hebrew") return(true);
+  if(isTreasure(row) === true) return(false);
+  else if(row.genre === "hebrew") return(true);
   else return(false);
 }
 
 // Determines if a book is written in Greek.
-function isGreek(data, i)
+function isGreek(row)
 {
-  if(isTreasure(data, i) === true) return(false);
-  else if(data[i].genre === "greek") return(true);
+  if(isTreasure(row) === true) return(false);
+  else if(row.genre === "greek") return(true);
   else return(false);
 }
 
 // Determines if a book is written in Latin.
-function isLatin(data, i)
+function isLatin(row)
 {
-  if(isTreasure(data, i) === true) return(false);
-  else if(data[i].genre === "latin") return(true);
+  if(isTreasure(row) === true) return(false);
+  else if(row.genre === "latin") return(true);
   else return(false);
 }
 
 // Determines if a book is written in a sacred language.
-function isSacred(data, i)
+function isSacred(row)
 {
-  if(isTreasure(data, i) === true) return(false);
-  else if(isHebrew(data, i) === true) return(true);
-  else if(isGreek(data, i) === true) return(true);
-  else if(isLatin(data, i) === true) return(true);
+  if(isTreasure(row) === true) return(false);
+  else if(isHebrew(row) === true) return(true);
+  else if(isGreek(row) === true) return(true);
+  else if(isLatin(row) === true) return(true);
   else return(false);
 }
 
 // Determines if a book falls into the "Parnassian" category.
-function isParnassian(data, i)
+function isParnassian(row)
 {
-  if(isTreasure(data, i) === true) return(false);
-  else if((data[i].dob >= goldenAgeStart) &&
-          (data[i].dob <= goldenAgeEnd) &&
-          (data[i].genre === "poetry"))
+  if(isTreasure(row) === true) return(false);
+  else if((row.dob >= goldenAgeStart) &&
+          (row.dob <= goldenAgeEnd) &&
+          (row.genre === "poetry"))
   {
     return(true);
   }
@@ -105,12 +85,12 @@ function isParnassian(data, i)
 }
 
 // Determines if a book falls into the "Anthology" category.
-function isAnthology(data, i)
+function isAnthology(row)
 {
-  if(isTreasure(data, i) === true) return(false);
-  else if((data[i].surname === null) &&
-          (data[i].genre === "poetry") &&
-          (data[i].yearPublished <= goldenAgeEndBook))
+  if(isTreasure(row) === true) return(false);
+  else if((row.surname === null) &&
+          (row.genre === "poetry") &&
+          (row.yearPublished <= goldenAgeEndBook))
   {
     return(true);
   }
@@ -118,12 +98,12 @@ function isAnthology(data, i)
 }
 
 // Determines whether a book doesn't fit any of the above categories.
-function isOther(data, i)
+function isOther(row)
 {
-  if((isSacred(data, i) === false) &&
-     (isParnassian(data, i) === false) &&
-     (isAnthology(data, i) === false) &&
-     (isTreasure(data, i) === false))
+  if((isSacred(row) === false) &&
+     (isParnassian(row) === false) &&
+     (isAnthology(row) === false) &&
+     (isTreasure(row) === false))
   {
     return(true);
   }
@@ -131,10 +111,9 @@ function isOther(data, i)
 }
 
 /*
-##############################
-#         FIRST PASS         #
-# Data from "PaperBook", etc #
-##############################
+#########
+# START #
+#########
 */
 
 // Fetches the required data from the database.
@@ -150,196 +129,179 @@ function fetch(request, response, type, err, contents)
   function ready(err, data)
   {
     if(err) throw err;
-    begin(response, type, err, contents, data);
+    makePoets(response, type, err, contents, data);
   }
-}
-
-// Begin processing the page's content by turning "content"
-// into a string "contents".
-function begin(response, type, err, contents, data)
-{
-  makePoets(response, type, err, contents, data);
 }
 
 // Makes the table of works by Golden Age poets.
 function makePoets(response, type, err, contents, data)
 {
-  var poets = "", row = "", inLib = "", title = "", notes = "";
+  var result = "";
+  var table = util.getTable();
+  var columns = ["Poet", "Title", "Year",
+                 "In the <a href=\"library.html\">Library</a>", "Notes"];
+  var row = [];
+  var poet = "", title = "", year = "", inLib = "", notes = "";
 
+  table.setHTMLClass("conq");
+  table.setColumns(columns);
   for(var i = 0; i < data.length; i++)
   {
-    if(data[i].inLibrary === trueInt) inLib = "yes";
-    else inLib = "no";
-    title = data[i].title;
-    if(data[i].notes === null) notes = "None.";
-    else notes = data[i].notes;
-
-    if(isParnassian(data, i))
+    if(isParnassian(data[i]))
     {
-      row = "";
-      row = "<td>"+data[i].fullTitle+"</td> "+
-            "<td><em>"+title+"</em></td> "+
-            "<td>"+data[i].yearPublished+"</td> "+
-            "<td>"+inLib+"</td> <td>"+notes+"</td> ";
-      row = "<tr> "+row+" </tr>\n";
-      poets = poets+row;
+      poet = util.deNullify(data[i].fullTitle);
+      title = "<em>"+data[i].title+"</em>";
+      year = data[i].yearPublished;
+      inLib = util.digitToYesNo(data[i].inLibrary);
+      notes = util.deNullify(data[i].notes);
+
+      row = [poet, title, year, inLib, notes];
+      table.addRow(row);
     }
   }
-  poets = "<table class=\"conq\"> <tr>\n<th>Poet</th> "+
-          "<th>Title</th> <th>Year</th> "+
-          "<th> In the <a href=\"library.html\">"+
-          "Library</a></th> <th>Notes</th> </tr>\n"+poets+
-          " </table>";
 
-  contents = absRep(contents, "POETS", poets);
+  result = table.buildHTMLPrintout();
+  contents = util.absRep(contents, "POETS", result);
+
   makeAnthology(response, type, err, contents, data);
 }
 
 // Makes the table of works by Golden Age poets.
 function makeAnthology(response, type, err, contents, data)
 {
-  var anth = "", row = "", inLib = "", title = "", notes = "";
+  var result = "";
+  var table = util.getTable();
+  var columns = ["Title", "Year",
+                 "In the <a href=\"library.html\">Library</a>", "Notes"];
+  var row = [];
+  var poet = "", title = "", year = "", inLib = "", notes = "";
 
+  table.setHTMLClass("conq");
+  table.setColumns(columns);
   for(var i = 0; i < data.length; i++)
   {
-    if(data[i].inLibrary === trueInt) inLib = "yes";
-    else inLib = "no";
-    title = data[i].title;
-    if(data[i].notes === null) notes = "None.";
-    else notes = data[i].notes;
-
-    if(isAnthology(data, i))
+    if(isAnthology(data[i]))
     {
-      row = "";
-      row = "<td><em>"+title+"</em></td> "+
-            "<td>"+data[i].yearPublished+"</td> "+
-            "<td>"+inLib+"</td> <td>"+notes+"</td> ";
-      row = "<tr> "+row+" </tr>\n";
-      anth = anth+row;
+      title = "<em>"+data[i].title+"</em>";
+      year = data[i].yearPublished;
+      inLib = util.digitToYesNo(data[i].inLibrary);
+      notes = util.deNullify(data[i].notes);
+
+      row = [title, year, inLib, notes];
+      table.addRow(row);
     }
   }
-  anth = "<table class=\"conq\"> <tr> "+
-         "<th>Title</th> <th>Year</th> "+
-         "<th> In the <a href=\"library.html\">"+
-         "Library</a></th> <th>Notes</th> </tr>\n"+
-         anth+" </table>";
 
-  contents = absRep(contents, "ANTHOLOGIES", anth);
+  result = table.buildHTMLPrintout();
+  contents = util.absRep(contents, "ANTHOLOGIES", result);
+
   makeSacred(response, type, err, contents, data);
 }
 
 // Makes the table of works in sacred languages.
 function makeSacred(response, type, err, contents, data)
 {
-  var header = "<table class=\"conq\"> <tr> <th>Poet</th> "+
-               "<th>Title</th> <th>Year</th> "+
-               "<th> In the <a href=\"theology.html\">"+
-               "Library</a></th> <th>Notes</th> </tr>\n";
-  var hebrew = ""; var greek = ""; var latin = "";
-  var row = ""; var inLib = ""; var poet = "";
-  var title = ""; var notes = "";
+  var resultH = "", resultG = "", resultL = "";
+  var columns = ["Poet", "Title", "Year",
+                 "In the <a href=\"theology.html\">Library</a>", "Notes"];
+  var hebrew = util.getTable();
+  var greek = util.getTable();
+  var latin = util.getTable();
+  var row = [];
+  var poet = "", title = "", year = "", inLib = "", notes = "";
 
+  hebrew.setHTMLClass("conq");
+  greek.setHTMLClass("conq");
+  latin.setHTMLClass("conq");
+  hebrew.setColumns(columns);
+  greek.setColumns(columns);
+  latin.setColumns(columns);
   for(var i = 0; i < data.length; i++)
   {
-    if(data[i].inLibrary === trueInt) inLib = "yes";
-    else inLib = "no";
-    title = data[i].title;
-    if(data[i].author === null) poet = "N/A";
-    else poet = data[i].fullTitle;
-    if(data[i].notes === null) notes = "None.";
-    else notes = data[i].notes;
+    poet = util.deNullify(data[i].fullTitle);
+    title = "<em>"+data[i].title+"</em>";
+    year = data[i].yearPublished;
+    inLib = util.digitToYesNo(data[i].inLibrary);
+    notes = util.deNullify(data[i].notes);
+    row = [poet, title, year, inLib, notes];
 
-    row = "";
-    row = "<td>"+poet+"</td> <td><em>"+title+"</em></td> "+
-          "<td>"+data[i].yearPublished+"</td> "+
-          "<td>"+inLib+"</td> <td>"+notes+"</td> ";
-    row = "<tr> "+row+" </tr>\n";
-
-    if(isHebrew(data, i)) hebrew = hebrew+row;
-    else if(isGreek(data, i)) greek = greek+row;
-    else if(isLatin(data, i)) latin = latin+row;
+    if(isHebrew(data[i])) hebrew.addRow(row);
+    else if(isGreek(data[i])) greek.addRow(row);
+    else if(isLatin(data[i])) latin.addRow(row);
   }
-  if(hebrew === "") hebrew = "<p> <em>None as yet.</em> </p>";
-  else hebrew = header+hebrew+" </table>";
-  if(greek === "") greek = "<p> <em>None as yet.</em> </p>";
-  else greek = header+greek+" </table>";
-  if(latin === "") latin = "<p> <em>None as yet.</em> </p>";
-  else latin = header+latin+" </table>";
+  resultH = hebrew.buildHTMLPrintout();
+  resultG = greek.buildHTMLPrintout();
+  resultL = latin.buildHTMLPrintout();
 
-  contents = absRep(contents, "SACREDHEBREW", hebrew);
-  contents = absRep(contents, "SACREDGREEK", greek);
-  contents = absRep(contents, "SACREDLATIN", latin);
+  contents = util.absRep(contents, "SACREDHEBREW", resultH);
+  contents = util.absRep(contents, "SACREDGREEK", resultG);
+  contents = util.absRep(contents, "SACREDLATIN", resultL);
+
   makeTreasures(response, type, err, contents, data);
 }
 
 // Makes the table of treasures.
 function makeTreasures(response, type, err, contents, data)
 {
-  var treasures = "", row = "", inLib = "", title = "", notes = "";
+  var result = "";
+  var table = util.getTable();
+  var columns = ["Author", "Title", "Year",
+                 "In the <a href=\"library.html\">Library</a>", "Notes"];
+  var row = [];
+  var author = "", title = "", year = "", inLib = "", notes = "";
 
+  table.setHTMLClass("conq");
+  table.setColumns(columns);
   for(var i = 0; i < data.length; i++)
   {
-    if(data[i].inLibrary === trueInt) inLib = "yes";
-    else inLib = "no";
-    title = data[i].title;
-    if(data[i].notes === null) notes = "None.";
-    else notes = data[i].notes;
-
-    if(isTreasure(data, i))
+    if(isTreasure(data[i]))
     {
-      row = "";
-      row = "<td>"+data[i].fullTitle+"</td> "+
-            "<td><em>"+title+"</em></td> "+
-            "<td>"+data[i].yearPublished+"</td> "+
-            "<td>"+inLib+"</td> <td>"+notes+"</td> ";
-      row = "<tr> "+row+" </tr>\n";
-      treasures = treasures+row;
+      author = util.deNullify(data[i].fullTitle);
+      title = "<em>"+data[i].title+"</em>";
+      year = data[i].yearPublished;
+      inLib = util.digitToYesNo(data[i].inLibrary);
+      notes = util.deNullify(data[i].notes);
+
+      row = [author, title, year, inLib, notes];
+      table.addRow(row);
     }
   }
-  treasures = "<table class=\"conq\"> <tr>\n<th>Author</th> "+
-              "<th>Title</th> <th>Year</th> "+
-              "<th> In the <a href=\"library.html\">"+
-              "Library</a></th> <th>Notes</th> </tr>\n"+
-              treasures+" </table>";
 
-  contents = absRep(contents, "TREASURES", treasures);
+  result = table.buildHTMLPrintout();
+  contents = util.absRep(contents, "TREASURES", result);
+
   makeOthers(response, type, err, contents, data);
 }
 
 // Makes the table of other important books.
 function makeOthers(response, type, err, contents, data)
 {
-  var others = "", row = "", inLib = "", title = "", notes = "";
+  var result = "";
+  var table = util.getTable();
+  var columns = ["Author", "Title", "Year",
+                 "In the <a href=\"library.html\">Library</a>", "Notes"];
+  var row = [];
+  var author = "", title = "", year = "", inLib = "", notes = "";
 
+  table.setHTMLClass("conq");
+  table.setColumns(columns);
   for(var i = 0; i < data.length; i++)
   {
-    if(data[i].inLibrary === trueInt) inLib = "yes";
-    else inLib = "no";
-    title = data[i].title;
-    if(data[i].notes === null) notes = "None.";
-    else notes = data[i].notes;
-
-    if(isOther(data, i) === true)
+    if(isOther(data[i]))
     {
-      row = "";
-      row = "<td>"+data[i].fullTitle+"</td> "+
-            "<td><em>"+title+"</em></td> "+
-            "<td>"+data[i].yearPublished+"</td> "+
-            "<td>"+inLib+"</td> <td>"+notes+"</td> ";
-      row = "<tr> "+row+" </tr>\n";
-      others = others+row;
+      author = util.deNullify(data[i].fullTitle);
+      title = "<em>"+data[i].title+"</em>";
+      year = data[i].yearPublished;
+      inLib = util.digitToYesNo(data[i].inLibrary);
+      notes = util.deNullify(data[i].notes);
+
+      row = [author, title, year, inLib, notes];
+      table.addRow(row);
     }
   }
-  if(others === "") others = "<p> <em>None as yet</em> </p>";
-  else
-  {
-    others = "<table class=\"conq\"> <tr> <th>Poet</th> "+
-             "<th>Title</th> <th>Year</th> "+
-             "<th> On the <a href=\"library.html\">"+
-             "Library</a></th> <th>Notes</th> </tr> "+
-             others+" </table>\n";
-  }
 
-  contents = absRep(contents, "OTHERWORKS", others);
+  result = table.buildHTMLPrintout();
+  contents = util.absRep(contents, "OTHERWORKS", result);
+
   final.wrapup(response, type, err, contents);
 }

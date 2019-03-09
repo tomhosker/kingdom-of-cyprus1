@@ -86,7 +86,7 @@ class CUtil
   // Replaces a null value with an appropriate string.
   deNullify(s)
   {
-    if(s === null) return("None.");
+    if(s === null) return("None");
     else return(s);
   }
 
