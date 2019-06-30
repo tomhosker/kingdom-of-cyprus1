@@ -270,7 +270,7 @@ function start()
   banned = [];
   banUpperCase("./public/", "");
   var service = https.createServer(options, authenticate);
-app.listen(PORT, () => {
+service.listen(PORT, () => {
     console.log("Our app is running on port ${ PORT }");
 });
 /*
