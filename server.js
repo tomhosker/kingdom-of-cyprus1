@@ -4,7 +4,8 @@ been changed significantly by me since then.
 */
 
 // Constants.
-var port = 8443 || process.env.PORT;
+const PORT = process.env.PORT || 3000;
+//var port = 8443;
 var verbose = true;
 var unauthorised = 401;
 var password = "mellon";
@@ -269,10 +270,15 @@ function start()
   banned = [];
   banUpperCase("./public/", "");
   var service = https.createServer(options, authenticate);
+app.listen(PORT, () => {
+    console.log("Our app is running on port ${ PORT }");
+});
+/*
   service.listen(process.env.PORT);
   var address = "0.0.0.0";
   if(port != 80) address = address+":"+port+"/";
   console.log("Server running at", address);
+*/
 }
 
 // Serve a request by delivering a file.
