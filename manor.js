@@ -109,8 +109,6 @@ function makeReplacements(response, type, err, contents, id, data)
   name = manor.name;
   masterName = util.makeLinkedST(master.id, master.shortTitle,
                                  master.rankTier, master.style);
-  baronyName = "<a href=\"baronya"+barony.id+"b.html\">"+
-               barony.name+"</a>";
 
   if(manor.arms === null) arms = "";
   else

@@ -33,27 +33,10 @@ module.exports = {
   }
 };
 
-/* 
-####################
-# HELPER FUNCTIONS #
-####################
-*/
-
-// Ronseal.
-function extractAccoladeName(id, accolade)
-{
-  for(var i = 0; i < accolade.length; i++)
-  {
-    if(accolade[i].id === id) return(accolade[i].name);
-  }
-  return("<em>Invalid accolade ID</em>");
-}
-
 /*
-######################
-#     FIRST PASS     #
-# Data from "Person" #
-######################
+#########
+# START #
+#########
 */
 
 // Fetches the required data from the database.
@@ -208,7 +191,7 @@ function makeAccolades(response, type, err, contents, id, holds)
   var acc = new Accolades(holds);
   var accoladesString = acc.htmlPrintout;
 
-  accoladesString = "<h4> Accolades </h4>\n"+"<p> "+accoladesString+" </p>";
+  accoladesString = "<h4> Accolades </h4>\n<p> "+accoladesString+" </p>";
   contents = util.absRep(contents, "ACCOLADES", accoladesString);
 
   final.wrapup(response, type, err, contents);

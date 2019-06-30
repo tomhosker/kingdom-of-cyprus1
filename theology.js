@@ -5,8 +5,8 @@ This code is responsible for building the "THEOLOGY" page.
 // Imports.
 var constants = require("./constants.js");
 var final = require("./final.js");
-var sql = require("sqlite3");
-var db = new sql.Database("canons.db");
+var cutil = require("./cutil.js"), util = cutil.getClass();
+var sql = require("sqlite3"), db = new sql.Database("canons.db");
 
 // Local constants.
 var trueInt = 1;
@@ -19,25 +19,6 @@ module.exports = {
     fetch(request, response, type, err, contents);
   }
 };
-
-/* 
-####################
-# HELPER FUNCTIONS #
-####################
-*/
-
-// "Absolute Replace" replaces a given substring.
-function absRep(bigstring, lilstring, rep)
-{
-  var count = 0;
-  while((bigstring.indexOf(lilstring) >= 0) &&
-        (count < constants.maxloops))
-  {
-    bigstring = bigstring.replace(lilstring, rep);
-    count++;
-  }
-  return(bigstring);
-}
 
 /*
 #########################
@@ -59,61 +40,61 @@ function fetch(request, response, type, err, contents)
   function ready(err, data)
   {
     if(err) throw err;
-    begin(response, type, err, contents, data);
+    makeSacred(response, type, err, contents, data);
   }
-}
-
-// Ronseal.
-function begin(response, type, err, contents, data)
-{
-  makeSacred(response, type, err, contents, data);
 }
 
 // Makes the table of works in the sacred languages.
 function makeSacred(response, type, err, contents, data)
 {
-  var row = "", author = "", inCat = "", title = "", notes = "";
-  var hebrew = "", greek = "", latin = "", trans = "";
-  var tableHeader = "<table class=\"conq\">\n<tr> <th>Poet</th> "+
-                    "<th>Title</th> <th>Year</th> "+
-                    "<th> On the <a href=\"catalogue.html\">"+
-                    "Catalogue</a></th> <th>Notes</th> </tr>\n";
+  var row = [];
+  var columns = ["Poet", "Title",
+                 "On the <a href=\"catalogue.html\">Catalogue</a>",
+                 "Notes"];
+  var poet = "", title = "", inCat = "", notes = "";
+  var hebrew = util.getTable(), greek = util.getTable(),
+      latin = util.getTable(), trans = util.getTable();
+  var hebrewString = "", greekString = "", latinString = "",
+      transString = "";
 
+  hebrew.setHTMLClass("conq");
+  greek.setHTMLClass("conq");
+  latin.setHTMLClass("conq");
+  trans.setHTMLClass("conq");
+  hebrew.setColumns(columns);
+  greek.setColumns(columns);
+  latin.setColumns(columns);
+  trans.setColumns(columns);
   for(var i = 0; i < data.length; i++)
   {
-    if(data[i].author === null) author = "N/A";
-    else author = data[i].fullTitle;
-    if(data[i].link === null) title = data[i].title;
+    poet = util.deNullify(data[i].fullTitle);
+
+    if(data[i].link === null) title = "<em>"+data[i].title+"</em>";
     else
     {
-      title = "<a href=\""+data[i].link+"\">"+data[i].title+"</a>";
+      title = "<em><a href=\""+data[i].link+"\">"+data[i].title+
+              "</a></em>";
     }
-    if(data[i].inCatalogue === trueInt) inCat = "yes";
-    else inCat = "no";
-    if(data[i].notes === null) notes = "None.";
-    else notes = data[i].notes;
 
-    row = "<tr> <td>"+author+"</td> <td><em>"+title+"</em></td> "+
-          "<td>"+data[i].yearPublished+"</td> <td>"+inCat+"</td> "+
-          "<td>"+notes+"</td> </tr>\n";
-    if(data[i].genre === "hebrew") hebrew = hebrew+row;
-    else if(data[i].genre === "greek") greek = greek+row;
-    else if(data[i].genre === "latin") latin = latin+row;
-    else if(data[i].genre === "trans") trans = trans+row;
+    inCat = util.digitToYesNo(data[i].inCatalogue);
+    notes = util.deNullify(data[i].notes, ".");
+    row = [poet, title, inCat, notes];
+
+    if(data[i].genre === "hebrew") hebrew.addRow(row);
+    else if(data[i].genre === "greek") greek.addRow(row);
+    else if(data[i].genre === "latin") latin.addRow(row);
+    else if(data[i].genre === "trans") trans.addRow(row);
   }
-  if(hebrew === "") hebrew = "<p> <em>None as yet.</em> </p>";
-  else hebrew = tableHeader+hebrew+" </table>";
-  if(greek === "") greek = "<p> <em>None as yet.</em> </p>";
-  else greek = tableHeader+greek+" </table>";
-  if(latin === "") latin = "<p> <em>None as yet.</em> </p>";
-  else latin = tableHeader+latin+" </table>";
-  if(trans === "") trans = "<p> <em>None as yet.</em> </p>";
-  else trans = tableHeader+trans+" </table>";
+  hebrewString = hebrew.buildHTMLPrintout();
+  greekString = greek.buildHTMLPrintout();
+  latinString = latin.buildHTMLPrintout();
+  transString = trans.buildHTMLPrintout();
 
-  contents = absRep(contents, "HEBREWWORKS", hebrew);
-  contents = absRep(contents, "GREEKWORKS", greek);
-  contents = absRep(contents, "LATINWORKS", latin);
-  contents = absRep(contents, "TRANSLATIONS", trans);
+  contents = util.absRep(contents, "HEBREWWORKS", hebrewString);
+  contents = util.absRep(contents, "GREEKWORKS", greekString);
+  contents = util.absRep(contents, "LATINWORKS", latinString);
+  contents = util.absRep(contents, "TRANSLATIONS", transString);
+
   makeOthers(response, type, err, contents, data);
 }
 
@@ -121,36 +102,38 @@ function makeSacred(response, type, err, contents, data)
 // Makes the table of other books.
 function makeOthers(response, type, err, contents, data)
 {
-  var others = "", row = "", title = "", author = "", notes = "";
-  var tableHeader = "<table class=\"conq\">\n<tr> <th>Author</th> "+
-                    "<th>Title</th> <th>Year</th> "+
-                    "<th>Notes</th> </tr>\n";
+  var tableString = "";
+  var table = util.getTable(), row = [];
+  var columns = ["Author", "Title", "Year",
+                 "On the <a href=\"catalogue.html\">Catalogue</a>",
+                 "Notes"];
+  var author = "", title = "", year = "", inCat = "", notes = "";
 
+  table.setHTMLClass("conq");
+  table.setColumns(columns);
   for(var i = 0; i < data.length; i++)
   {
-    if(data[i].author === null) author = "N/A";
-    else author = data[i].fullTitle;
-    if(data[i].link === null) title = data[i].title;
-    else
-    {
-      title = "<a href=\""+data[i].link+"\">"+data[i].title+"</a>";
-    }
-    if(data[i].notes === null) notes = "None.";
-    else notes = data[i].notes;
-
     if(data[i].genre === "theology")
     {
-      row = "<tr> <td>"+author+"</td> "+
-            "<td><em>"+title+"</em></td> "+
-            "<td>"+data[i].yearPublished+"</td> "+
-            "<td>"+notes+"</td> </tr>\n";
-      others = others+row;
+      author = util.deNullify(data[i].fullTitle);
+
+      if(data[i].link === null) title = "<em>"+data[i].title+"</em>";
+      else
+      {
+        title = "<em><a href=\""+data[i].link+"\">"+data[i].title+
+                "</a></em>";
+      }
+
+      year = data[i].yearPublished.toString();
+      inCat = util.digitToYesNo(data[i].inCatalogue);
+      notes = util.deNullify(data[i].notes, ".");
+      row = [author, title, year, inCat, notes];
+      table.addRow(row);
     }
   }
-  if(others === "") others = "<p> <em>None as yet.</em> </p>";
-  else others = tableHeader+others+" </table>";
+  tableString = table.buildHTMLPrintout();
 
-  contents = absRep(contents, "OTHERWORKS", others);
+  contents = util.absRep(contents, "OTHERWORKS", tableString);
 
   final.wrapup(response, type, err, contents);
 }

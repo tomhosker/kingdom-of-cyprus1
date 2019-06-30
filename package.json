@@ -1,0 +1,25 @@
+{
+  "name": "cyprus",
+  "version": "1.0.0",
+  "description": "The website for the Kingdom of Cyprus.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tomhosker/kingdom-of-cyprus.git"
+  },
+  "author": "Tom Hosker",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tomhosker/kingdom-of-cyprus/issues"
+  },
+  "homepage": "https://github.com/tomhosker/kingdom-of-cyprus#readme",
+  "dependencies": {
+    "basic-auth": "^2.0.1",
+    "hebcal": "^2.3.1",
+    "sqlite3": "^4.0.9"
+  }
+}
