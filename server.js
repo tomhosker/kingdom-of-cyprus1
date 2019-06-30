@@ -269,7 +269,7 @@ function start()
   banned = [];
   banUpperCase("./public/", "");
   var service = https.createServer(options, authenticate);
-  service.listen(port, "localhost");
+  service.listen(process.env.PORT || port);
   var address = "https://localhost";
   if(port != 80) address = address+":"+port+"/";
   console.log("Server running at", address);
