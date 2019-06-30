@@ -270,15 +270,18 @@ function start()
   banned = [];
   banUpperCase("./public/", "");
   var service = https.createServer(options, authenticate);
-service.listen(PORT, () => {
-    console.log("Our app is running on port ${ PORT }");
-});
+
 /*
-  service.listen(process.env.PORT);
-  var address = "0.0.0.0";
-  if(port != 80) address = address+":"+port+"/";
-  console.log("Server running at", address);
+service.listen(PORT, () => {
+    console.log("Our app is running on port "+PORT);
+});
 */
+
+  service.listen(PORT);
+  var address = "https://localhost";
+  if(PORT != 80) address = address+":"+PORT+"/";
+  console.log("Server running at", address);
+
 }
 
 // Serve a request by delivering a file.
